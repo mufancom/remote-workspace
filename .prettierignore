@@ -1,0 +1,5 @@
+**/bld/**
+**/coverage/**
+
+package.json
+lerna.json
