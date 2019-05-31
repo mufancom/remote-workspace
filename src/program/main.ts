@@ -1,85 +1,104 @@
-import * as Path from 'path';
+import {Config, Daemon, WorkspaceManager} from './@core';
 
-import 'villa/platform/node';
+const config = new Config('.remote-dev.json');
 
-import {Server} from '@hapi/hapi';
-import {BoringCache} from 'boring-cache';
-import {main} from 'main-function';
-import {OmitValueOfKey} from 'tslang';
-import {ConnectionManager} from './@connection-manager';
-import {Workspace, WorkspaceEntry} from './@workspace';
-import {WorkspaceContainer} from './@workspace-container';
-import {connect} from 'net';
+const workspaceManager = new WorkspaceManager();
 
-const {PORT = '8080', HOST = 'localhost', HOME = '.'} = process.env;
+const daemon = new Daemon(config, workspaceManager);
 
-const NEVER = new Promise<never>(() => {});
+// import * as Path from 'path';
 
-const WORKSPACES_DB_PATH = Path.join(HOME, '.remote-workspaces.json');
+// import 'villa/platform/node';
 
-const workspaceDB = new BoringCache(WORKSPACES_DB_PATH);
+// import {Server} from '@hapi/hapi';
+// import {BoringCache} from 'boring-cache';
+// import {main} from 'main-function';
+// import {OmitValueOfKey} from 'tslang';
+// import {ConnectionManager} from './@connection-manager';
+// import {Workspace, WorkspaceEntry} from './@workspace';
+// import {WorkspaceContainer} from './@workspace-container';
+// import {connect} from 'net';
 
-main(async () => {
-  let connectionManager = new ConnectionManager<Workspace>(async workspace => {
-    let container = new WorkspaceContainer(workspace, {
-      port: 22,
-      env: {},
-    });
+// const {PORT = '8080', HOST = 'localhost', HOME = '.'} = process.env;
 
-    let port = await container.start();
+// const NEVER = new Promise<never>(() => {});
 
-    return connect(port);
-  });
+// const WORKSPACES_DB_PATH = Path.join(HOME, '.remote-workspaces.json');
 
-  let apiServer = new Server({
-    port: PORT,
-    host: HOST,
-  });
+// const workspaceDB = new BoringCache(WORKSPACES_DB_PATH);
 
-  apiServer.route({
-    method: 'GET',
-    path: '/',
-    handler() {
-      return 'Up and running...';
-    },
-  });
+// main(async () => {
+//   let connectionManager = new ConnectionManager<Workspace>(async workspace => {
+//     let container = new WorkspaceContainer(workspace, {
+//       port: 22,
+//       env: {},
+//     });
 
-  apiServer.route({
-    method: 'GET',
-    path: '/workspaces',
-    handler() {
-      return {
-        data: workspaceDB.list<WorkspaceEntry>('workspaces'),
-      };
-    },
-  });
+//     let port = await container.start();
 
-  apiServer.route({
-    method: 'PUT',
-    path: '/workspaces/{id}',
-    handler({params: {id}, payload}) {
-      workspaceDB.pull<WorkspaceEntry>('workspaces', entry => entry.id === id);
+//     return connect(port);
+//   });
 
-      workspaceDB.push<WorkspaceEntry>('workspaces', {
-        id,
-        ...(payload as OmitValueOfKey<WorkspaceEntry, 'id'>),
-      });
+//   let workspace = new Workspace({
+//     id: 'test-workspace',
+//     projects: [],
+//   });
 
-      return {};
-    },
-  });
+//   await workspace.setup();
 
-  apiServer.route({
-    method: 'DELETE',
-    path: '/workspaces/{id}',
-    handler({params: {id}}) {
-      workspaceDB.pull<WorkspaceEntry>('workspaces', entry => entry.id === id);
+//   let {server, port} = await connectionManager.open(workspace);
 
-      return {};
-    },
-  });
+//   console.log('port', port);
 
-  await apiServer.start();
+//   let apiServer = new Server({
+//     port: PORT,
+//     host: HOST,
+//   });
 
-  return NEVER;
-});
+//   apiServer.route({
+//     method: 'GET',
+//     path: '/',
+//     handler() {
+//       return 'Up and running...';
+//     },
+//   });
+
+//   apiServer.route({
+//     method: 'GET',
+//     path: '/workspaces',
+//     handler() {
+//       return {
+//         data: workspaceDB.list<WorkspaceEntry>('workspaces'),
+//       };
+//     },
+//   });
+
+//   apiServer.route({
+//     method: 'PUT',
+//     path: '/workspaces/{id}',
+//     handler({params: {id}, payload}) {
+//       workspaceDB.pull<WorkspaceEntry>('workspaces', entry => entry.id === id);
+
+//       workspaceDB.push<WorkspaceEntry>('workspaces', {
+//         id,
+//         ...(payload as OmitValueOfKey<WorkspaceEntry, 'id'>),
+//       });
+
+//       return {};
+//     },
+//   });
+
+//   apiServer.route({
+//     method: 'DELETE',
+//     path: '/workspaces/{id}',
+//     handler({params: {id}}) {
+//       workspaceDB.pull<WorkspaceEntry>('workspaces', entry => entry.id === id);
+
+//       return {};
+//     },
+//   });
+
+//   await apiServer.start();
+
+//   return NEVER;
+// });

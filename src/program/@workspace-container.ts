@@ -2,6 +2,7 @@ import assert from 'assert';
 import * as ChildProcess from 'child_process';
 
 import getPort from 'get-port';
+import _ from 'lodash';
 import {Dict} from 'tslang';
 import * as v from 'villa';
 
@@ -23,7 +24,7 @@ export class WorkspaceContainer {
   async start(): Promise<number> {
     let {env, port: containerPort} = this.options;
 
-    let envArgs = Object.entries(env).flatMap(([key, value]) => [
+    let envArgPairs = Object.entries(env).map(([key, value]) => [
       '--env',
       `${key}=${value}`,
     ]);
@@ -32,9 +33,10 @@ export class WorkspaceContainer {
 
     let dockerRunProcess = ChildProcess.spawn('docker', [
       'run',
-      ...envArgs,
+      '--detach',
+      ..._.flatten(envArgPairs),
       '--volume',
-      `${this.workspace}:/workspaces`,
+      `${this.workspace.volume}:/workspaces`,
       '--publish',
       `${hostPort}:${containerPort}`,
       'remote-dev',
@@ -45,6 +47,8 @@ export class WorkspaceContainer {
     dockerRunProcess.stdout.on('data', buffer => {
       containerId += buffer;
     });
+
+    dockerRunProcess.stderr.pipe(process.stderr);
 
     await v.awaitable(dockerRunProcess);
 

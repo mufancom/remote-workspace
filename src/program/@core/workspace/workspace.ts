@@ -8,17 +8,38 @@ export interface RawWorkspaceProject {
   initialize: string;
 }
 
+export interface RawWorkspaceService {
+  name: string;
+  image: string;
+}
+
 export interface RawWorkspace {
   id: string;
+  image?: string;
   projects: RawWorkspaceProject[];
+  services?: RawWorkspaceService[];
 }
 
 export class Workspace {
-  constructor(private entry: RawWorkspace) {}
+  constructor(private raw: RawWorkspace) {}
+
+  get id(): string {
+    let {id} = this.raw;
+    return id;
+  }
+
+  get image(): string {
+    let {image = 'remote-dev'} = this.raw;
+    return image;
+  }
+
+  get services(): RawWorkspaceService[] {
+    let {services = []} = this.raw;
+    return services;
+  }
 
   get volume(): string {
-    let {id} = this.entry;
-    return `workspace-${id}`;
+    return `workspace-${this.id}`;
   }
 
   async setup(): Promise<void> {

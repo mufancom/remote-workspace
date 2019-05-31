@@ -13,6 +13,8 @@ bld/
 
 # Debugging outputs
 
+workdir/
+
 *.log
 
 # Testing files
