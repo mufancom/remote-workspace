@@ -3,6 +3,7 @@ import * as ChildProcess from 'child_process';
 import * as v from 'villa';
 
 export interface RawWorkspaceProject {
+  name: string;
   repository: string;
   branch: string;
   initialize: string;
@@ -38,19 +39,35 @@ export class Workspace {
     return services;
   }
 
+  get projects(): RawWorkspaceProject[] {
+    let {projects} = this.raw;
+    return projects;
+  }
+
   get volume(): string {
     return `workspace-${this.id}`;
   }
 
   async setup(): Promise<void> {
-    await this.ensureVolume();
+    await this.ensureProjects();
   }
 
   async teardown(): Promise<void> {}
 
-  private async ensureVolume(): Promise<void> {
-    await v.awaitable(
-      ChildProcess.spawn('docker', ['volume', 'create', '--name', this.volume]),
-    );
+  private async ensureProjects(): Promise<void> {
+    for (let project of this.projects) {
+      await v.awaitable(
+        ChildProcess.spawn('ssh', [
+          '-A',
+          'localhost',
+          '-p',
+          '2222',
+          './scripts/ensure-project.sh',
+          project.name,
+          project.repository,
+          project.branch,
+        ]),
+      );
+    }
   }
 }

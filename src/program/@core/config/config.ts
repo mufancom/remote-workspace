@@ -11,17 +11,28 @@ export interface VolumesConfig {
 }
 
 export class Config extends EventEmitter {
+  readonly dir: string;
+
   private raw!: RawConfig;
 
   constructor(readonly path: string) {
     super();
+
+    this.dir = Path.dirname(path);
 
     this.update();
   }
 
   get dataDir(): string {
     let {dataDir = '.'} = this.raw;
-    return Path.resolve(this.path, '..', dataDir);
+    return Path.resolve(this.dir, dataDir);
+  }
+
+  get identity(): string {
+    let {identity} = this.raw;
+    let path = Path.join(this.dir, identity);
+
+    return FS.readFileSync(path, 'utf-8');
   }
 
   get users(): RawUserConfig[] {

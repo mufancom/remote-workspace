@@ -1,12 +1,23 @@
+import {EventEmitter} from 'events';
 import * as Path from 'path';
 
 import * as FS from 'fs-extra';
 
 import {Config} from '../config';
 
-abstract class GeneratedFile {
+interface GeneratedFile {
+  emit(event: 'update'): boolean;
+
+  on(event: 'update', listener: () => void): this;
+}
+
+abstract class GeneratedFile extends EventEmitter {
   constructor(readonly fileName: string, protected config: Config) {
-    config.on('update', () => this.update());
+    super();
+
+    config.on('update', () => {
+      this.update().catch(console.error);
+    });
   }
 
   get dir(): string {
@@ -17,10 +28,14 @@ abstract class GeneratedFile {
     return Path.join(this.dir, this.fileName);
   }
 
-  abstract get generatedContent(): string;
+  abstract generateContent(): Promise<string>;
 
-  update(): void {
-    FS.outputFileSync(this.path, this.generatedContent);
+  async update(): Promise<void> {
+    let content = await this.generateContent();
+
+    FS.outputFileSync(this.path, content);
+
+    this.emit('update');
   }
 }
 

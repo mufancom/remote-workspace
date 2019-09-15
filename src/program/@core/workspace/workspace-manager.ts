@@ -3,11 +3,31 @@ import {EventEmitter} from 'events';
 import {Workspace} from './workspace';
 
 export class WorkspaceManager extends EventEmitter {
-  readonly workspaces: Workspace[] = [
+  readonly workspaces = [
     new Workspace({
       id: 'test-workspace',
-      projects: [],
-      // services: [{name: 'mongo', image: 'mongo'}],
+      projects: [
+        {
+          name: 'makeflow-web',
+          repository: 'git@gitlab.mufan.io:makeflow/makeflow-web.git',
+          branch: '',
+          initialize: 'yarn',
+        },
+      ],
+      services: [
+        {
+          name: 'mongo',
+          image: 'mongo',
+        },
+        {
+          name: 'redis',
+          image: 'redis',
+        },
+        {
+          name: 'zookeeper',
+          image: 'zookeeper',
+        },
+      ],
     }),
   ];
 

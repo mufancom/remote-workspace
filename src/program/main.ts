@@ -6,6 +6,8 @@ const workspaceManager = new WorkspaceManager();
 
 const daemon = new Daemon(config, workspaceManager);
 
+daemon;
+
 // import * as Path from 'path';
 
 // import 'villa/platform/node';

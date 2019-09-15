@@ -14,6 +14,10 @@ export class Daemon {
     private config: Config,
     private workspaceManager: WorkspaceManager,
   ) {
+    this.dockerComposeFile.on('update', this.onDockerComposeFileUpdate);
+
     config.update();
   }
+
+  private onDockerComposeFileUpdate = (): void => {};
 }
