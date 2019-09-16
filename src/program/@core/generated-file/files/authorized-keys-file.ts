@@ -3,10 +3,10 @@ import {AbstractGeneratedFile} from '../generated-file';
 
 export class AuthorizedKeysFile extends AbstractGeneratedFile {
   constructor(config: Config) {
-    super('user-ssh/authorized_keys', config);
+    super(config);
   }
 
-  async generateContent(): Promise<string> {
+  get content(): string {
     let userConfigs = this.config.users;
 
     return [
@@ -29,5 +29,9 @@ export class AuthorizedKeysFile extends AbstractGeneratedFile {
         })
         .join(''),
     ].join('\n');
+  }
+
+  update(): void {
+    this.output('user-ssh/authorized_keys', this.content);
   }
 }

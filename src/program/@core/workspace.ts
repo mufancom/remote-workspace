@@ -1,7 +1,3 @@
-import * as ChildProcess from 'child_process';
-
-import * as v from 'villa';
-
 export interface RawWorkspaceProject {
   name: string;
   repository: string;
@@ -22,7 +18,7 @@ export interface RawWorkspace {
 }
 
 export class Workspace {
-  constructor(private raw: RawWorkspace) {}
+  constructor(private raw: RawWorkspace, readonly port: number) {}
 
   get id(): string {
     let {id} = this.raw;
@@ -46,28 +42,5 @@ export class Workspace {
 
   get volume(): string {
     return `workspace-${this.id}`;
-  }
-
-  async setup(): Promise<void> {
-    await this.ensureProjects();
-  }
-
-  async teardown(): Promise<void> {}
-
-  private async ensureProjects(): Promise<void> {
-    for (let project of this.projects) {
-      await v.awaitable(
-        ChildProcess.spawn('ssh', [
-          '-A',
-          'localhost',
-          '-p',
-          '2222',
-          './scripts/ensure-project.sh',
-          project.name,
-          project.repository,
-          project.branch,
-        ]),
-      );
-    }
   }
 }

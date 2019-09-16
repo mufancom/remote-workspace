@@ -20,7 +20,7 @@ export class Config extends EventEmitter {
 
     this.dir = Path.dirname(path);
 
-    this.update();
+    this.load();
   }
 
   get dataDir(): string {
@@ -45,18 +45,10 @@ export class Config extends EventEmitter {
     return {ssh};
   }
 
-  update(): void {
+  private load(): void {
     let jsonc = FS.readFileSync(this.path, 'utf-8');
     let json = stripJSONComments(jsonc);
 
     this.raw = JSON.parse(json);
-
-    this.emit('update');
   }
-}
-
-export interface Config {
-  emit(event: 'update'): boolean;
-
-  on(event: 'update', listener: () => void): this;
 }
