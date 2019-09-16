@@ -4,6 +4,8 @@ import * as Path from 'path';
 
 import stripJSONComments from 'strip-json-comments';
 
+import {RawTemplatesConfig} from '../../../server-client';
+
 import {RawConfig, RawUserConfig} from './raw-config';
 
 export interface VolumesConfig {
@@ -43,6 +45,11 @@ export class Config extends EventEmitter {
     let {volumes = {}} = this.raw;
     let {ssh = 'remote-dev-ssh'} = volumes;
     return {ssh};
+  }
+
+  get templates(): RawTemplatesConfig {
+    let {templates = {}} = this.raw;
+    return templates;
   }
 
   private load(): void {

@@ -1,21 +1,8 @@
-export interface RawWorkspaceProject {
-  name: string;
-  repository: string;
-  branch: string;
-  initialize: string;
-}
-
-export interface RawWorkspaceService {
-  name: string;
-  image: string;
-}
-
-export interface RawWorkspace {
-  id: string;
-  image?: string;
-  projects: RawWorkspaceProject[];
-  services?: RawWorkspaceService[];
-}
+import {
+  RawWorkspace,
+  RawWorkspaceProject,
+  RawWorkspaceService,
+} from '../../server-client';
 
 export class Workspace {
   constructor(private raw: RawWorkspace, readonly port: number) {}

@@ -1,3 +1,5 @@
+import {RawTemplatesConfig} from '../../../server-client';
+
 export interface RawUserConfig {
   name: string;
   email: string;
@@ -11,4 +13,5 @@ export interface RawConfig {
   volumes?: {
     ssh?: string;
   };
+  templates?: RawTemplatesConfig;
 }

@@ -2,19 +2,16 @@ import * as ChildProcess from 'child_process';
 
 import {BoringCache} from 'boring-cache';
 import getPort from 'get-port';
-import {OmitValueOfKey} from 'tslang';
 import uuid from 'uuid';
 import * as v from 'villa';
 
+import {
+  CreateWorkspaceOptions,
+  WorkspaceMetadata,
+} from '../../../server-client';
 import {Config} from '../config';
 import {AuthorizedKeysFile, DockerComposeFile} from '../generated-file';
-import {RawWorkspace, Workspace} from '../workspace';
-
-export type CreateWorkspaceOptions = OmitValueOfKey<RawWorkspace, 'id'>;
-
-interface WorkspaceMetadata extends RawWorkspace {
-  port: number;
-}
+import {Workspace} from '../workspace';
 
 export interface DaemonStorageData {
   workspaces?: WorkspaceMetadata[];

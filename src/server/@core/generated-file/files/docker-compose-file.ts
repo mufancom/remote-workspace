@@ -1,6 +1,3 @@
-import * as Path from 'path';
-
-import * as FS from 'fs-extra';
 import YAML from 'js-yaml';
 import _ from 'lodash';
 
@@ -35,12 +32,6 @@ export class DockerComposeFile extends AbstractGeneratedFile {
     for (let workspace of workspaces) {
       this.output(
         INITIALIZE_SCRIPT_SOURCE_PATH(workspace),
-        this.buildInitializeScript(workspace),
-        {mode: 0o700},
-      );
-
-      FS.outputFileSync(
-        Path.join(this.dir, INITIALIZE_SCRIPT_SOURCE_PATH(workspace)),
         this.buildInitializeScript(workspace),
         {mode: 0o700},
       );
@@ -121,9 +112,7 @@ export class DockerComposeFile extends AbstractGeneratedFile {
         project => `\
 if [ ! -d "${project.name}" ]
 then
-  GIT_SSH_COMMAND="ssh -i ${INITIALIZE_IDENTITY_TARGET_PATH}" git clone "${
-          project.repository
-        }" "${project.name}"
+  GIT_SSH_COMMAND="ssh -i ${INITIALIZE_IDENTITY_TARGET_PATH}" git clone "${project.repository}" "${project.name}"
 fi
 `,
       )
