@@ -111,7 +111,11 @@ export class DockerComposeFile extends AbstractGeneratedFile {
 
     let projectsScript = workspace.projects
       .map(
-        ({name, git: {url, branch = 'master', newBranch, depth}}) => `\
+        ({
+          name,
+          git: {url, branch = 'master', newBranch, depth},
+          scripts: {initialize} = {},
+        }) => `\
 if [ ! -d ${ShellQuote.quote([name])} ]
 then
   GIT_SSH_COMMAND="ssh -i ${INITIALIZE_IDENTITY_TARGET_PATH}"\\
@@ -120,7 +124,7 @@ then
         'clone',
         '--branch',
         branch,
-        depth && `--shallow-since=${depth}`,
+        depth && `--depth=${depth}`,
         url,
         name,
       ]),
@@ -130,6 +134,7 @@ then
       ? `git ${ShellQuote.quote([`-C`, name, `checkout`, `-b`, newBranch])}`
       : ''
   }
+  ${initialize || ''}
 fi
 `,
       )

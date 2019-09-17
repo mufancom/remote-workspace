@@ -43,6 +43,8 @@ ${workspaces
 Host ${SSH_CONFIG_HOST(workspace)}
   User root
   HostName ${config.remoteHost}
+  HostkeyAlias remote-dev-${config.remoteHost}
+  ForwardAgent yes
   Port ${workspace.port}`,
   )
   .join('\n\n')}
@@ -89,7 +91,7 @@ Host ${SSH_CONFIG_HOST(workspace)}
         project
           ? [
               '--folder-uri',
-              `${vscodeRemoteURI}${`/workspace/projects/${project.name}`}`,
+              `${vscodeRemoteURI}${`/root/workspace/projects/${project.name}`}`,
             ]
           : ['--file-uri', vscodeRemoteURI],
         {

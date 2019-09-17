@@ -1,4 +1,4 @@
-import {Button, Checkbox, Descriptions, Form, Input, Radio} from 'antd';
+import {Button, Checkbox, Descriptions, Input, Radio, message} from 'antd';
 import {CheckboxOptionType} from 'antd/lib/checkbox';
 import {RadioChangeEvent} from 'antd/lib/radio';
 import _ from 'lodash';
@@ -15,10 +15,12 @@ import {
   RawTemplatesConfig,
 } from '../../../bld/shared';
 
-export interface CreateWorkspaceFormProps {}
+export interface WorkspaceFormProps {
+  onCreate(): void;
+}
 
 @observer
-export class CreateWorkspaceForm extends Component<CreateWorkspaceFormProps> {
+export class WorkspaceForm extends Component<WorkspaceFormProps> {
   @observable
   private templates: RawTemplatesConfig = {};
 
@@ -36,6 +38,20 @@ export class CreateWorkspaceForm extends Component<CreateWorkspaceFormProps> {
 
   @observable
   private _optionsJSON: string | undefined;
+
+  @observable
+  private creating = false;
+
+  @computed
+  private get paramKeys(): string[] {
+    return _.union(
+      ...[
+        this.selectedWorkspaceTemplate,
+        ...this.selectedProjectTemplates,
+        ...this.selectedServiceTemplates,
+      ].map(template => template && template.params),
+    );
+  }
 
   @computed
   private get selectedWorkspaceTemplate():
@@ -109,6 +125,17 @@ export class CreateWorkspaceForm extends Component<CreateWorkspaceFormProps> {
     return services.filter(
       (service): service is string => typeof service === 'string',
     );
+  }
+
+  @computed
+  private get missingParams(): boolean {
+    let presentParamKeySet = new Set(
+      Object.entries(this.paramDict)
+        .filter(([, value]) => !!value)
+        .map(([key]) => key),
+    );
+
+    return this.paramKeys.some(key => !presentParamKeySet.has(key));
   }
 
   @computed
@@ -233,21 +260,15 @@ export class CreateWorkspaceForm extends Component<CreateWorkspaceFormProps> {
 
   @computed
   private get paramsRendering(): ReactNode {
-    let params = _.union(
-      ...[
-        this.selectedWorkspaceTemplate,
-        ...this.selectedProjectTemplates,
-        ...this.selectedServiceTemplates,
-      ].map(template => template && template.params),
-    );
+    let paramKeys = this.paramKeys;
 
-    if (!params.length) {
+    if (!paramKeys.length) {
       return undefined;
     }
 
     let paramDict = this.paramDict;
 
-    return params.map(param => (
+    return paramKeys.map(param => (
       <Descriptions.Item
         key={`param:${param}`}
         label={`Parameter \${${param}}`}
@@ -273,10 +294,19 @@ export class CreateWorkspaceForm extends Component<CreateWorkspaceFormProps> {
           onChange={this.onOptionsJSONInputChange}
         />
         <div className="buttons-line">
-          <Button type="link" onClick={this.onResetOptionsJSONButtonClick}>
-            Reset
+          {this._optionsJSON && (
+            <Button type="link" onClick={this.onResetButtonClick}>
+              Reset
+            </Button>
+          )}
+          <Button
+            type="primary"
+            disabled={this.missingParams}
+            loading={this.creating}
+            onClick={this.onCreateButtonClick}
+          >
+            Create
           </Button>
-          <Button type="primary">Create</Button>
         </div>
       </Descriptions.Item>
     );
@@ -316,9 +346,41 @@ export class CreateWorkspaceForm extends Component<CreateWorkspaceFormProps> {
     this._optionsJSON = event.target.value || undefined;
   };
 
-  private onResetOptionsJSONButtonClick = (): void => {
+  private onResetButtonClick = (): void => {
     this._optionsJSON = undefined;
   };
+
+  private onCreateButtonClick = (): void => {
+    this.create(this.optionsJSON).catch(console.error);
+  };
+
+  private async create(json: string): Promise<void> {
+    this.creating = true;
+
+    try {
+      let response = await fetch('/api/workspaces', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json,
+      });
+
+      let {error} = await response.json();
+
+      if (error) {
+        message.error(error);
+      } else {
+        message.success('Workspace created.');
+
+        let {onCreate} = this.props;
+
+        onCreate();
+      }
+    } finally {
+      this.creating = false;
+    }
+  }
 
   private async load(): Promise<void> {
     let response = await fetch('/api/templates');

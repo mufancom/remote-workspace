@@ -1,4 +1,4 @@
-import {List, message} from 'antd';
+import {List, Popconfirm, message} from 'antd';
 import {observable} from 'mobx';
 import {observer} from 'mobx-react';
 import React, {Component, ReactNode} from 'react';
@@ -41,16 +41,29 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     clearInterval(this.timer);
   }
 
+  refresh(): void {
+    this._refresh().catch(console.error);
+  }
+
   private renderActions(workspace: WorkspaceMetadata): ReactNode[] {
     let onLaunchClick = (): void => {
       this.launch(workspace.id).catch(console.error);
     };
 
-    return [<a onClick={onLaunchClick}>Launch</a>];
-  }
+    let onDeleteConfirm = (): void => {
+      this.delete(workspace.id).catch(console.error);
+    };
 
-  private refresh(): void {
-    this._refresh().catch(console.error);
+    return [
+      <a onClick={onLaunchClick}>Launch</a>,
+      <Popconfirm
+        placement="bottom"
+        title="Are you sure you want to delete this workspace?"
+        onConfirm={onDeleteConfirm}
+      >
+        <a>Delete</a>
+      </Popconfirm>,
+    ];
   }
 
   private async _refresh(): Promise<void> {
@@ -81,6 +94,22 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
       message.error(error);
     } else {
       message.loading('Launching VS Code...');
+    }
+  }
+
+  private async delete(id: string): Promise<void> {
+    let response = await fetch(`/api/workspaces/${id}`, {
+      method: 'DELETE',
+    });
+
+    let {error} = await response.json();
+
+    if (error) {
+      message.error(error);
+    } else {
+      message.success('Workspace deleted.');
+
+      this.refresh();
     }
   }
 }

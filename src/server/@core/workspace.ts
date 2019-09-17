@@ -13,7 +13,7 @@ export class Workspace {
   }
 
   get image(): string {
-    let {image = 'remote-dev'} = this.raw;
+    let {image = 'remote-dev:latest'} = this.raw;
     return image;
   }
 
