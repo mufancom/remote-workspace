@@ -6,17 +6,17 @@
   "author": "Chengdu Mufan Technology Co., Ltd.",
   "license": "MIT",
   "scripts": {
-    "build:server-client": "tsc --project src/server-client",
+    "build:server-client-shared": "tsc --project src/server-client-shared",
     "build:server": "tsc --project src/server",
     "watch:client": "parcel watch --out-dir bld/client src/client/index.html",
     "typecheck:client": "tsc --project src/client",
     "build:client": "parcel build --out-dir bld/client src/client/index.html",
-    "build": "yarn build:server-client && yarn build:server && yarn typecheck:client && yarn build:client",
-    "lint:server-client": "tslint --project src/server-client",
+    "build": "yarn build:server-client-shared && yarn build:server && yarn typecheck:client && yarn build:client",
+    "lint:server-client-shared": "tslint --project src/server-client-shared",
     "lint:server": "tslint --project src/server",
     "lint:client": "tslint --project src/client",
     "lint-prettier": "prettier --check \"**/*.{ts,tsx,js,jsx,json,yml,md}\"",
-    "lint": "yarn lint-prettier && yarn lint:server-client && yarn lint:server && yarn lint:client"
+    "lint": "yarn lint-prettier && yarn lint:server-client-shared && yarn lint:server && yarn lint:client"
   },
   "main": "bld/program/index.js",
   "files": [
@@ -33,7 +33,6 @@
     "chalk": "^2.4.2",
     "fs-extra": "^8.1.0",
     "get-port": "^5.0.0",
-    "handlebars": "^4.2.0",
     "js-yaml": "^3.13.1",
     "lodash": "^4.17.15",
     "main-function": "^0.1.2",
@@ -41,6 +40,7 @@
     "mobx-react": "^6.1.3",
     "react": "^16.9.0",
     "react-dom": "^16.9.0",
+    "shell-quote": "^1.7.2",
     "strip-json-comments": "^3.0.1",
     "tslang": "^0.1.17",
     "uuid": "^3.3.3",
@@ -49,7 +49,6 @@
   "devDependencies": {
     "@magicspace/configs": "0.1.49",
     "@types/fs-extra": "^8.0.0",
-    "@types/handlebars": "^4.1.0",
     "@types/hapi__hapi": "^18.2.5",
     "@types/hapi__inert": "^5.2.0",
     "@types/hapi__vision": "^5.5.1",
@@ -58,6 +57,7 @@
     "@types/node": "^12.7.5",
     "@types/react": "^16.9.2",
     "@types/react-dom": "^16.9.0",
+    "@types/shell-quote": "^1.6.1",
     "@types/uuid": "^3.4.5",
     "parcel-bundler": "^1.12.3",
     "prettier": "^1.18.2",

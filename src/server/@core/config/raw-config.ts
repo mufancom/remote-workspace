@@ -1,4 +1,4 @@
-import {RawTemplatesConfig} from '../../../server-client';
+import {RawTemplatesConfig} from '../../../server-client-shared';
 
 export interface RawUserConfig {
   name: string;

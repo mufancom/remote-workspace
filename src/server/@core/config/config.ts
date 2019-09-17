@@ -4,7 +4,7 @@ import * as Path from 'path';
 
 import stripJSONComments from 'strip-json-comments';
 
-import {RawTemplatesConfig} from '../../../server-client';
+import {RawTemplatesConfig} from '../../../server-client-shared';
 
 import {RawConfig, RawUserConfig} from './raw-config';
 

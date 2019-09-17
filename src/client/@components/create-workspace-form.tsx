@@ -13,7 +13,7 @@ import {
   RawTemplateServiceConfig,
   RawTemplateWorkspaceConfig,
   RawTemplatesConfig,
-} from '../../server-client';
+} from '../../server-client-shared';
 
 export interface CreateWorkspaceFormProps {}
 
@@ -23,7 +23,7 @@ export class CreateWorkspaceForm extends Component<CreateWorkspaceFormProps> {
   private templates: RawTemplatesConfig = {};
 
   @observable
-  private selectedWorkspaceName: string | false = false;
+  private selectedWorkspaceName = 'default';
 
   @observable
   private _selectedProjectNames: string[] = [];
@@ -32,13 +32,10 @@ export class CreateWorkspaceForm extends Component<CreateWorkspaceFormProps> {
   private _selectedServiceNames: string[] = [];
 
   @observable
-  private paramsDict: Dict<string | undefined> = {};
+  private paramDict: Dict<string | undefined> = {};
 
   @observable
   private _optionsJSON: string | undefined;
-
-  @computed
-  private get displayName(): string {}
 
   @computed
   private get selectedWorkspaceTemplate():
@@ -120,19 +117,30 @@ export class CreateWorkspaceForm extends Component<CreateWorkspaceFormProps> {
       return this._optionsJSON;
     }
 
-    let selectedWorkspaceName = this.selectedWorkspaceName;
+    let paramDict = this.paramDict;
 
-    let {workspaces} = this.templates;
-
-    let workspaceTemplate = this.selectedWorkspaceTemplate || {
+    let {displayName = ''} = this.selectedWorkspaceTemplate || {
       name: '',
     };
 
-    let workspace: CreateWorkspaceOptions = {
-      // displayName,
+    let options: CreateWorkspaceOptions = {
+      displayName,
+      projects: this.selectedProjectTemplates.map(({params, ...rest}) => rest),
+      services: this.selectedServiceTemplates.map(({params, ...rest}) => rest),
     };
 
-    return JSON.stringify({});
+    options = _.cloneDeepWith(options, value => {
+      return typeof value === 'string' ? replaceParams(value) : undefined;
+    });
+
+    return JSON.stringify(options, undefined, 2);
+
+    function replaceParams(content: string): string {
+      return content.replace(
+        /\$\{(\w+)\}/g,
+        (text, key) => paramDict[key] || text,
+      );
+    }
   }
 
   @computed
@@ -143,13 +151,11 @@ export class CreateWorkspaceForm extends Component<CreateWorkspaceFormProps> {
       return undefined;
     }
 
-    let options: (CheckboxOptionType | string)[] = [
-      {
-        label: 'none',
-        value: false,
-      },
-      ...workspaces.map(workspace => workspace.name),
-    ];
+    let options = workspaces.map(workspace => workspace.name);
+
+    if (!options.some(option => option === 'default')) {
+      options.unshift('default');
+    }
 
     return (
       <Descriptions.Item label="Workspace Templates">
@@ -239,11 +245,20 @@ export class CreateWorkspaceForm extends Component<CreateWorkspaceFormProps> {
       return undefined;
     }
 
-    let paramDict = this.paramsDict;
+    let paramDict = this.paramDict;
 
     return params.map(param => (
-      <Descriptions.Item key={`param:${param}`} label={param}>
-        <Input value={paramDict[param]} disabled={!!this._optionsJSON} />
+      <Descriptions.Item
+        key={`param:${param}`}
+        label={`Parameter \${${param}}`}
+      >
+        <Input
+          value={paramDict[param]}
+          disabled={!!this._optionsJSON}
+          onChange={event => {
+            paramDict[param] = event.target.value;
+          }}
+        />
       </Descriptions.Item>
     ));
   }

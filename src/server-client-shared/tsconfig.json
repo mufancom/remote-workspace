@@ -4,6 +4,6 @@
     "declaration": true,
 
     "rootDir": ".",
-    "outDir": "../../bld/server-client"
+    "outDir": "../../bld/server-client-shared"
   }
 }

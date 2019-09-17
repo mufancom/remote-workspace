@@ -3,7 +3,7 @@ import {observable} from 'mobx';
 import {observer} from 'mobx-react';
 import React, {Component, ReactNode} from 'react';
 
-import {WorkspaceMetadata} from '../../server-client';
+import {WorkspaceMetadata} from '../../server-client-shared';
 
 const REFRESH_INTERVAL_DEFAULT = 10000;
 

@@ -1,5 +1,6 @@
 import YAML from 'js-yaml';
 import _ from 'lodash';
+import * as ShellQuote from 'shell-quote';
 
 import {Config} from '../../config';
 import {Workspace} from '../../workspace';
@@ -98,21 +99,37 @@ export class DockerComposeFile extends AbstractGeneratedFile {
 
   private buildInitializeScript(workspace: Workspace): string {
     let hosts = _.uniq(
-      workspace.projects.map(
-        project => project.repository.match(/@(.+?):/)![1],
-      ),
+      workspace.projects.map(project => project.git.url.match(/@(.+?):/)![1]),
     );
 
     let sshKeyScansScript = hosts
-      .map(host => `ssh-keyscan ${host} >> /root/.ssh/known_hosts`)
+      .map(
+        host =>
+          `ssh-keyscan ${ShellQuote.quote([host])} >> /root/.ssh/known_hosts`,
+      )
       .join('\n');
 
     let projectsScript = workspace.projects
       .map(
-        project => `\
-if [ ! -d "${project.name}" ]
+        ({name, git: {url, branch = 'master', newBranch, depth}}) => `\
+if [ ! -d ${ShellQuote.quote([name])} ]
 then
-  GIT_SSH_COMMAND="ssh -i ${INITIALIZE_IDENTITY_TARGET_PATH}" git clone "${project.repository}" "${project.name}"
+  GIT_SSH_COMMAND="ssh -i ${INITIALIZE_IDENTITY_TARGET_PATH}"\\
+    git ${ShellQuote.quote(
+      _.compact([
+        'clone',
+        '--branch',
+        branch,
+        depth && `--shallow-since=${depth}`,
+        url,
+        name,
+      ]),
+    )}
+  ${
+    newBranch
+      ? `git ${ShellQuote.quote([`-C`, name, `checkout`, `-b`, newBranch])}`
+      : ''
+  }
 fi
 `,
       )

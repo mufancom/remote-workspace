@@ -1,10 +1,20 @@
 import {OmitValueOfKey} from 'tslang';
 
+export interface RawWorkspaceProjectGit {
+  url: string;
+  branch?: string;
+  newBranch?: string;
+  depth?: number;
+}
+
+export interface RawWorkspaceProjectScripts {
+  initialize?: string;
+}
+
 export interface RawWorkspaceProject {
   name: string;
-  repository: string;
-  branch: string;
-  initialize: string;
+  git: RawWorkspaceProjectGit;
+  scripts?: RawWorkspaceProjectScripts;
 }
 
 export interface RawWorkspaceService {

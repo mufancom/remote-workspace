@@ -1117,13 +1117,6 @@
   dependencies:
     "@types/node" "*"
 
-"@types/handlebars@^4.1.0":
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/@types/handlebars/-/handlebars-4.1.0.tgz#3fcce9bf88f85fe73dc932240ab3fb682c624850"
-  integrity sha512-gq9YweFKNNB1uFK71eRqsd4niVkXrxHugqWFQkeLRJvGjnxsLr16bYtcsG4tOFwmYi0Bax+wCkbf1reUfdl4kA==
-  dependencies:
-    handlebars "*"
-
 "@types/hapi__boom@*":
   version "7.4.1"
   resolved "https://registry.yarnpkg.com/@types/hapi__boom/-/hapi__boom-7.4.1.tgz#06439d7637245dcbe6dd6548d2a91f2c1243d80b"
@@ -1247,6 +1240,11 @@
   dependencies:
     "@types/prop-types" "*"
     csstype "^2.2.0"
+
+"@types/shell-quote@^1.6.1":
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/@types/shell-quote/-/shell-quote-1.6.1.tgz#eed0cd93ac3628427d7b44c4550f854f9400e39f"
+  integrity sha512-t0bxRLQ75MMF7EeICa1eYC//o1/6gPaUV7ELke4l4OkwpZ9apOzvv2oR5F2PmQJ3tM83Lo+MNKfAXn5gQRMcnA==
 
 "@types/uuid@^3.4.5":
   version "3.4.5"
@@ -3075,7 +3073,7 @@ hammerjs@^2.0.8:
   resolved "https://registry.yarnpkg.com/hammerjs/-/hammerjs-2.0.8.tgz#04ef77862cff2bb79d30f7692095930222bf60f1"
   integrity sha1-BO93hiz/K7edMPdpIJWTAiK/YPE=
 
-handlebars@*, handlebars@^4.1, handlebars@^4.2.0:
+handlebars@^4.1:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/handlebars/-/handlebars-4.2.0.tgz#57ce8d2175b9bbb3d8b3cf3e4217b1aec8ddcb2e"
   integrity sha512-Kb4xn5Qh1cxAKvQnzNWZ512DhABzyFNmsaJf3OAkWNa4NkaqWcNI8Tao8Tasi0/F4JD9oyG0YxuFyvyR57d+Gw==
@@ -6030,6 +6028,11 @@ shebang-regex@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/shebang-regex/-/shebang-regex-1.0.0.tgz#da42f49740c0b42db2ca9728571cb190c98efea3"
   integrity sha1-2kL0l0DAtC2yypcoVxyxkMmO/qM=
+
+shell-quote@^1.7.2:
+  version "1.7.2"
+  resolved "https://registry.yarnpkg.com/shell-quote/-/shell-quote-1.7.2.tgz#67a7d02c76c9da24f99d20808fcaded0e0e04be2"
+  integrity sha512-mRz/m/JVscCrkMyPqHc/bczi3OQHkLTqXHEFu0zDhK/qfv3UcOA4SVmRCLmos4bhjr9ekVQubj/R7waKapmiQg==
 
 sigmund@^1.0.1:
   version "1.0.1"
