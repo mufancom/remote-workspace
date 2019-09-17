@@ -3,12 +3,9 @@
   "compilerOptions": {
     "composite": true,
 
-    "types": ["node"],
-
     "declaration": true,
 
     "rootDir": ".",
-    "outDir": "../../bld/server"
-  },
-  "references": [{"path": "../shared"}, {"path": "../node-shared"}]
+    "outDir": "../../bld/shared"
+  }
 }

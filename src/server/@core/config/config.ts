@@ -1,10 +1,8 @@
-import {EventEmitter} from 'events';
 import * as FS from 'fs';
 import * as Path from 'path';
 
-import stripJSONComments from 'strip-json-comments';
-
-import {RawTemplatesConfig} from '../../../server-client-shared';
+import {AbstractConfig} from '../../../../bld/node-shared';
+import {RawTemplatesConfig} from '../../../../bld/shared';
 
 import {RawConfig, RawUserConfig} from './raw-config';
 
@@ -12,17 +10,13 @@ export interface VolumesConfig {
   ssh: string;
 }
 
-export class Config extends EventEmitter {
+export class Config extends AbstractConfig<RawConfig> {
   readonly dir: string;
 
-  private raw!: RawConfig;
-
-  constructor(readonly path: string) {
-    super();
+  constructor(path: string) {
+    super(path);
 
     this.dir = Path.dirname(path);
-
-    this.load();
   }
 
   get dataDir(): string {
@@ -50,12 +44,5 @@ export class Config extends EventEmitter {
   get templates(): RawTemplatesConfig {
     let {templates = {}} = this.raw;
     return templates;
-  }
-
-  private load(): void {
-    let jsonc = FS.readFileSync(this.path, 'utf-8');
-    let json = stripJSONComments(jsonc);
-
-    this.raw = JSON.parse(json);
   }
 }

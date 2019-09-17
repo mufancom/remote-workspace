@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {"noUnusedLocals": false, "noUnusedParameters": false},
+  "references": [
+    {"path": "shared/tsconfig.incremental.json"},
+    {"path": "node-shared/tsconfig.incremental.json"},
+    {"path": "server/tsconfig.incremental.json"},
+    {"path": "client/tsconfig.incremental.json"},
+    {"path": "client-host/tsconfig.incremental.json"}
+  ]
+}

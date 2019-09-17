@@ -13,7 +13,7 @@ import {
   RawTemplateServiceConfig,
   RawTemplateWorkspaceConfig,
   RawTemplatesConfig,
-} from '../../server-client-shared';
+} from '../../../bld/shared';
 
 export interface CreateWorkspaceFormProps {}
 

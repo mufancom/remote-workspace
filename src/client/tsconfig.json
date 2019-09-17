@@ -1,12 +1,21 @@
 {
   "extends": "@magicspace/configs/tsconfig.json",
   "compilerOptions": {
+    "composite": true,
+
     "lib": ["esnext", "dom"],
     "types": [],
     "jsx": "react",
+
+    "declaration": true,
     "experimentalDecorators": true,
 
     "rootDir": ".",
     "noEmit": true
-  }
+  },
+  "references": [
+    {
+      "path": "../shared"
+    }
+  ]
 }

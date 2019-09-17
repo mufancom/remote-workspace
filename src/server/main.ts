@@ -7,7 +7,7 @@ import Inert from '@hapi/inert';
 import {BoringCache} from 'boring-cache';
 import {main} from 'main-function';
 
-import {CreateWorkspaceOptions} from '../server-client-shared';
+import {CreateWorkspaceOptions} from '../../bld/shared';
 
 import {Config, Daemon, DaemonStorageData} from './@core';
 import {NEVER} from './@utils';

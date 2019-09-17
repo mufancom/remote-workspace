@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {"noUnusedLocals": false, "noUnusedParameters": false},
+  "references": [{"path": "../shared/tsconfig.incremental.json"}]
+}

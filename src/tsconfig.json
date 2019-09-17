@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "composite": true
+  },
+  "files": [],
+  "references": [
+    {"path": "shared"},
+    {"path": "node-shared"},
+    {"path": "server"},
+    {"path": "client"},
+    {"path": "client-host"}
+  ]
+}

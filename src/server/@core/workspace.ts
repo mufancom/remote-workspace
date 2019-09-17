@@ -2,7 +2,7 @@ import {
   RawWorkspace,
   RawWorkspaceProject,
   RawWorkspaceService,
-} from '../../server-client-shared';
+} from '../../../bld/shared';
 
 export class Workspace {
   constructor(private raw: RawWorkspace, readonly port: number) {}

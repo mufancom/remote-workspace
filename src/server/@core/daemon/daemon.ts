@@ -8,7 +8,7 @@ import * as v from 'villa';
 import {
   CreateWorkspaceOptions,
   WorkspaceMetadata,
-} from '../../../server-client-shared';
+} from '../../../../bld/shared';
 import {Config} from '../config';
 import {AuthorizedKeysFile, DockerComposeFile} from '../generated-file';
 import {Workspace} from '../workspace';
