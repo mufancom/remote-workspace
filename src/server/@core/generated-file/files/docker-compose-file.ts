@@ -52,9 +52,9 @@ export class DockerComposeFile extends AbstractGeneratedFile {
               {
                 image: workspace.image,
                 volumes: [
-                  './user-ssh:/root/.ssh',
-                  `${volumesConfig.ssh}:/etc/ssh`,
                   `${WORKSPACE_SOURCE_PATH(workspace)}:/root/workspace`,
+                  './authorized_keys:/root/.ssh/authorized_keys',
+                  `${volumesConfig.ssh}:/etc/ssh`,
                 ],
                 networks: [NETWORK_NAME(workspace)],
                 ports: [`${workspace.port}:22`],

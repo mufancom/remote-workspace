@@ -1,5 +1,11 @@
+export interface RawRemoteConfig {
+  host: string;
+  url?: string;
+}
+
 export interface RawConfig {
-  server: string;
+  remote: RawRemoteConfig;
+  port?: number;
   vscodeExecutable?: string;
   sshConfig?: string;
 }

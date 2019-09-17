@@ -5,8 +5,6 @@
 
     "types": ["node"],
 
-    "declaration": true,
-
     "rootDir": ".",
     "outDir": "../../bld/server"
   },

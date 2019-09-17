@@ -89,6 +89,9 @@ export class Daemon {
       },
     );
 
+    composeProcess.stdout.pipe(process.stdout);
+    composeProcess.stderr.pipe(process.stderr);
+
     await v.awaitable(composeProcess);
   }
 }

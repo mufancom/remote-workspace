@@ -14,7 +14,7 @@ bld/
 
 # Debugging outputs
 
-workdir/
+*-workdir/
 
 *.log
 

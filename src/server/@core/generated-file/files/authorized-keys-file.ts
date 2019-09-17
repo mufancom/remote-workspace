@@ -32,6 +32,6 @@ export class AuthorizedKeysFile extends AbstractGeneratedFile {
   }
 
   update(): void {
-    this.output('user-ssh/authorized_keys', this.content);
+    this.output('authorized_keys', this.content);
   }
 }

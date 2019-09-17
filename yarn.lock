@@ -831,6 +831,16 @@
   resolved "https://registry.yarnpkg.com/@hapi/formula/-/formula-1.2.0.tgz#994649c7fea1a90b91a0a1e6d983523f680e10cd"
   integrity sha512-UFbtbGPjstz0eWHb+ga/GM3Z9EzqKXFWIbSOFURU0A/Gku0Bky4bCk9/h//K2Xr3IrCfjFNhMm4jyZ5dbCewGA==
 
+"@hapi/h2o2@^8.3.2":
+  version "8.3.2"
+  resolved "https://registry.yarnpkg.com/@hapi/h2o2/-/h2o2-8.3.2.tgz#008a8f9ec3d9bba29077691aa9ec0ace93d4de80"
+  integrity sha512-2WkZq+QAkvYHWGqnUuG0stcVeGyv9T7bopBYnCJSUEuvBZlUf2BTX2JCVSKxsnTLOxCYwoC/aI4Rr0ZSRd2oVg==
+  dependencies:
+    "@hapi/boom" "7.x.x"
+    "@hapi/hoek" "8.x.x"
+    "@hapi/joi" "16.x.x"
+    "@hapi/wreck" "15.x.x"
+
 "@hapi/hapi@^18.4.0":
   version "18.4.0"
   resolved "https://registry.yarnpkg.com/@hapi/hapi/-/hapi-18.4.0.tgz#607c33e31741bacba107011e2e24eaf431d8cc7a"
@@ -1140,6 +1150,15 @@
   version "10.2.2"
   resolved "https://registry.yarnpkg.com/@types/hapi__catbox/-/hapi__catbox-10.2.2.tgz#b13fbdd6006c8793eb80919158593bc2bf8307c4"
   integrity sha512-AWK70LgRsRWL1TNw+aT0IlS56E0pobvFdr/en0K8XazyK4Ey6T/jXhQqv/iQ6FJAAU+somMzgmt9fWq2TaaOkA==
+
+"@types/hapi__h2o2@^8.3.0":
+  version "8.3.0"
+  resolved "https://registry.yarnpkg.com/@types/hapi__h2o2/-/hapi__h2o2-8.3.0.tgz#c2e6598ab6ed28edb1a5edd44ddc185e1c252dd8"
+  integrity sha512-jD6L+8BJ+SVbwBzQK3W7zGnDYgrwuCNDl9r1P0GdwoYsysNADl7STfrhJ/m9qPt2fD1vFVJsfsFjoJ/iCyNlOQ==
+  dependencies:
+    "@types/hapi__boom" "*"
+    "@types/hapi__hapi" "*"
+    "@types/node" "*"
 
 "@types/hapi__hapi@*", "@types/hapi__hapi@^18.2.5":
   version "18.2.5"
@@ -3310,6 +3329,11 @@ https-browserify@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/https-browserify/-/https-browserify-1.0.0.tgz#ec06c10e0a34c0f2faf199f7fd7fc78fffd03c73"
   integrity sha1-7AbBDgo0wPL68Zn3/X/Hj//QPHM=
+
+hyphenate@^0.2.4:
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/hyphenate/-/hyphenate-0.2.4.tgz#5c1a99cebef6fe889744cdc339beb60865e12438"
+  integrity sha512-COZPA5RLSvGJDlWrbMcKF16tKcfCaNNh63yA7QldGz6i/BVJAeYCXPQAiXUzS0y2pxY7c8VId0CPvxm2Rbisqw==
 
 iconv-lite@0.4.24, iconv-lite@^0.4.4, iconv-lite@~0.4.13:
   version "0.4.24"

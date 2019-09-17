@@ -19,6 +19,16 @@ export class Config extends AbstractConfig<RawConfig> {
     this.dir = Path.dirname(path);
   }
 
+  get host(): string {
+    let {host = '0.0.0.0'} = this.raw;
+    return host;
+  }
+
+  get port(): number {
+    let {port = 8022} = this.raw;
+    return port;
+  }
+
   get dataDir(): string {
     let {dataDir = '.'} = this.raw;
     return Path.resolve(this.dir, dataDir);

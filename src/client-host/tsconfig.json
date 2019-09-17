@@ -1,10 +1,12 @@
 {
   "extends": "@magicspace/configs/tsconfig.json",
   "compilerOptions": {
+    "composite": true,
+
     "types": ["node"],
 
     "rootDir": ".",
-    "outDir": "../../bld/server"
+    "outDir": "../../bld/client-host"
   },
-  "references": [{"path": "../node-shared"}]
+  "references": [{"path": "../node-shared"}, {"path": "../client"}]
 }

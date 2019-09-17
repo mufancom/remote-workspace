@@ -1,4 +1,4 @@
-import {List} from 'antd';
+import {List, message} from 'antd';
 import {observable} from 'mobx';
 import {observer} from 'mobx-react';
 import React, {Component, ReactNode} from 'react';
@@ -42,9 +42,11 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
   }
 
   private renderActions(workspace: WorkspaceMetadata): ReactNode[] {
-    let onOpenClick = (): void => {};
+    let onLaunchClick = (): void => {
+      this.launch(workspace.id).catch(console.error);
+    };
 
-    return [<a onClick={onOpenClick}>Open</a>];
+    return [<a onClick={onLaunchClick}>Launch</a>];
   }
 
   private refresh(): void {
@@ -58,6 +60,27 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
 
     if (data) {
       this.workspaces = data;
+    }
+  }
+
+  private async launch(id: string): Promise<void> {
+    let response = await fetch('/api/launch', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id,
+        workspaces: this.workspaces,
+      }),
+    });
+
+    let {error} = await response.json();
+
+    if (error) {
+      message.error(error);
+    } else {
+      message.loading('Launching VS Code...');
     }
   }
 }

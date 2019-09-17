@@ -7,6 +7,8 @@ export interface RawUserConfig {
 }
 
 export interface RawConfig {
+  host?: string;
+  port?: number;
   dataDir?: string;
   identity: string;
   users: RawUserConfig[];

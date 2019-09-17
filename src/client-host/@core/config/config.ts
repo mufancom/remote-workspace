@@ -10,13 +10,26 @@ export class Config extends AbstractConfig<RawConfig> {
     super(path);
   }
 
+  get remoteURL(): string {
+    let {
+      remote: {host, url},
+    } = this.raw;
+
+    return url || `http://${host}:8022`;
+  }
+
+  get remoteHost(): string {
+    return this.raw.remote.host;
+  }
+
+  get port(): number {
+    let {port = 8022} = this.raw;
+    return port;
+  }
+
   get vscodeExecutable(): string {
     let {vscodeExecutable = 'code'} = this.raw;
     return vscodeExecutable;
-  }
-
-  get server(): string {
-    return this.raw.server;
   }
 
   get sshConfigFilePath(): string {
