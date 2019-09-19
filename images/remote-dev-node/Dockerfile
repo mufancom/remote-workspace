@@ -1,6 +1,6 @@
 FROM makeflow/remote-dev
 
-# https://github.com/nodejs/docker-node/blob/master/12/buster/Dockerfile
+# start https://github.com/nodejs/docker-node/blob/master/12/buster/Dockerfile
 
 RUN groupadd --gid 1000 node \
   && useradd --uid 1000 --gid node --shell /bin/bash --create-home node
@@ -63,4 +63,8 @@ RUN set -ex \
   && ln -s /opt/yarn-v$YARN_VERSION/bin/yarnpkg /usr/local/bin/yarnpkg \
   && rm yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz
 
-CMD [ "/scripts/entrypoint.sh" ]
+# end
+
+RUN yarn config set prefix /root/.yarn &&\
+  yarn config set cache-folder /root/.yarn-cache &&\
+  echo 'export PATH="/root/.yarn/bin:${PATH}"' >> /root/.bashrc

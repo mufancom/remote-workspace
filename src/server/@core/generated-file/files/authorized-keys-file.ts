@@ -1,6 +1,8 @@
 import {Config} from '../../config';
 import {AbstractGeneratedFile} from '../generated-file';
 
+import {writeTextFileToVolume} from './@utils';
+
 export class AuthorizedKeysFile extends AbstractGeneratedFile {
   constructor(config: Config) {
     super(config);
@@ -32,6 +34,6 @@ export class AuthorizedKeysFile extends AbstractGeneratedFile {
   }
 
   update(): void {
-    this.output('authorized_keys', this.content);
+    writeTextFileToVolume('user-ssh', 'authorized_keys', this.content);
   }
 }

@@ -2,6 +2,6 @@
 
 /remote-dev/node/bin/node /remote-dev/initialize
 
-# /root/workspace/initialize.sh > /root/workspace/initialize.log 2>&1 &
+touch /root/workspace/.ready
 
 /usr/sbin/sshd -D

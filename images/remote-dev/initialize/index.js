@@ -27,6 +27,11 @@ main(async () => {
   });
 
   for (let host of hostSet) {
+    try {
+      await spawn('ssh-keygen', ['-F', host]);
+      continue;
+    } catch {}
+
     console.info(`Adding "${host}" to known hosts...`);
 
     let sshKeyScanProcess = ChildProcess.spawn('ssh-keyscan', [host]);
@@ -38,14 +43,6 @@ main(async () => {
   }
 
   knownHostsFileStream.close();
-
-  await FSE.outputFile(
-    '/root/.ssh/initialize-identity',
-    await FSE.readFile('/root/.ssh/_initialize-identity'),
-    {
-      mode: 0o600,
-    },
-  );
 
   let gitCloneEnv = {
     ...process.env,

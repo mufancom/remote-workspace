@@ -34,4 +34,8 @@ export interface WorkspaceMetadata extends RawWorkspace {
   port: number;
 }
 
+export interface WorkspaceStatus extends WorkspaceMetadata {
+  ready: boolean;
+}
+
 export type CreateWorkspaceOptions = OmitValueOfKey<RawWorkspace, 'id'>;

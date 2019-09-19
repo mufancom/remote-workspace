@@ -1,9 +1,10 @@
-import {List, Popconfirm, message} from 'antd';
+import {Avatar, List, Popconfirm, message} from 'antd';
+import _ from 'lodash';
 import {observable} from 'mobx';
 import {observer} from 'mobx-react';
 import React, {Component, ReactNode} from 'react';
 
-import {WorkspaceMetadata} from '../../../bld/shared';
+import {WorkspaceStatus} from '../../../bld/shared';
 
 const REFRESH_INTERVAL_DEFAULT = 10000;
 
@@ -14,7 +15,7 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
   private timer: number | undefined;
 
   @observable
-  private workspaces: WorkspaceMetadata[] = [];
+  private workspaces: WorkspaceStatus[] = [];
 
   render(): ReactNode {
     return (
@@ -23,7 +24,21 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
         renderItem={workspace => (
           <List.Item actions={this.renderActions(workspace)}>
             <List.Item.Meta
-              description={workspace.displayName || workspace.id}
+              avatar={
+                workspace.ready ? (
+                  <Avatar icon="check" style={{backgroundColor: '#52c41a'}} />
+                ) : (
+                  <Avatar
+                    icon="ellipsis"
+                    style={{backgroundColor: '#1890ff'}}
+                  />
+                )
+              }
+              title={workspace.displayName || workspace.id}
+              description={
+                workspace.projects.map(project => project.name).join(', ') ||
+                '-'
+              }
             ></List.Item.Meta>
           </List.Item>
         )}
@@ -45,17 +60,17 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     this._refresh().catch(console.error);
   }
 
-  private renderActions(workspace: WorkspaceMetadata): ReactNode[] {
+  private renderActions(workspace: WorkspaceStatus): ReactNode[] {
     let onLaunchClick = (): void => {
-      this.launch(workspace.id).catch(console.error);
+      this.launch(workspace).catch(console.error);
     };
 
     let onDeleteConfirm = (): void => {
       this.delete(workspace.id).catch(console.error);
     };
 
-    return [
-      <a onClick={onLaunchClick}>Launch</a>,
+    return _.compact([
+      workspace.ready && <a onClick={onLaunchClick}>Launch</a>,
       <Popconfirm
         placement="bottom"
         title="Are you sure you want to delete this workspace?"
@@ -63,29 +78,26 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
       >
         <a>Delete</a>
       </Popconfirm>,
-    ];
+    ]);
   }
 
   private async _refresh(): Promise<void> {
     let response = await fetch('/api/workspaces');
 
-    let {data} = (await response.json()) as {data?: WorkspaceMetadata[]};
+    let {data} = (await response.json()) as {data?: WorkspaceStatus[]};
 
     if (data) {
       this.workspaces = data;
     }
   }
 
-  private async launch(id: string): Promise<void> {
+  private async launch(workspace: WorkspaceStatus): Promise<void> {
     let response = await fetch('/api/launch', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        id,
-        workspaces: this.workspaces,
-      }),
+      body: JSON.stringify(workspace),
     });
 
     let {error} = await response.json();

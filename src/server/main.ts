@@ -45,7 +45,7 @@ main(async () => {
     path: '/api/workspaces',
     handler() {
       return {
-        data: storage.list('workspaces'),
+        data: daemon.workspaceStatuses,
       };
     },
   });

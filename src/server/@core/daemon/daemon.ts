@@ -1,6 +1,8 @@
 import * as ChildProcess from 'child_process';
+import * as Path from 'path';
 
 import {BoringCache} from 'boring-cache';
+import * as FSE from 'fs-extra';
 import getPort from 'get-port';
 import uuid from 'uuid';
 import * as v from 'villa';
@@ -8,6 +10,7 @@ import * as v from 'villa';
 import {
   CreateWorkspaceOptions,
   WorkspaceMetadata,
+  WorkspaceStatus,
 } from '../../../../bld/shared';
 import {Config} from '../config';
 import {AuthorizedKeysFile, DockerComposeFile} from '../generated-file';
@@ -31,6 +34,17 @@ export class Daemon {
     this.authorizedKeysFile.update();
 
     this.dockerComposeUpdate().catch(console.error);
+  }
+
+  get workspaceStatuses(): WorkspaceStatus[] {
+    return this.storage.list('workspaces').map(
+      (metadata): WorkspaceStatus => {
+        return {
+          ...metadata,
+          ready: FSE.existsSync(Path.join('workspaces', metadata.id, '.ready')),
+        };
+      },
+    );
   }
 
   private get workspaces(): Workspace[] {

@@ -1,9 +1,11 @@
 import YAML from 'js-yaml';
 import _ from 'lodash';
 
-import {Config} from '../../config';
+import {GeneralDockerVolumeEntry} from '../../config';
 import {Workspace} from '../../workspace';
 import {AbstractGeneratedFile} from '../generated-file';
+
+import {writeTextFileToVolume} from './@utils';
 
 function NETWORK_NAME(workspace: Workspace): string {
   return `${workspace.id}-network`;
@@ -15,8 +17,6 @@ function WORKSPACE_SOURCE_PATH(workspace: Workspace): string {
   return `../workspaces/${workspace.id}`;
 }
 
-const WORKSPACE_TARGET_PATH = '/root/workspace';
-
 // workspace metadata
 
 function WORKSPACE_METADATA_SOURCE_PATH(workspace: Workspace): string {
@@ -25,32 +25,14 @@ function WORKSPACE_METADATA_SOURCE_PATH(workspace: Workspace): string {
 
 // repositories
 
-const REPOSITORIES_SOURCE_PATH = '../repositories';
-const REPOSITORIES_TARGET_PATH = '/root/repositories';
-
-// authorized_keys
-
-const AUTHORIZED_KEYS_SOURCE_PATH = './authorized_keys';
-const AUTHORIZED_KEYS_TARGET_PATH = '/root/.ssh/authorized_keys';
-
-// initialize-identity
-
-const INITIALIZE_IDENTITY_SOURCE_PATH = './initialize-identity';
-const INITIALIZE_IDENTITY_TARGET_PATH = '/root/.ssh/_initialize-identity';
-
-// ssh
-
-const SSH_TARGET_PATH = '/etc/ssh';
-
 export class DockerComposeFile extends AbstractGeneratedFile {
-  constructor(config: Config) {
-    super(config);
-  }
-
   update(workspaces: Workspace[]): void {
-    this.output('docker-compose.yml', this.buildDockerComposeYAML(workspaces));
-
-    this.output(INITIALIZE_IDENTITY_SOURCE_PATH, this.config.identity);
+    writeTextFileToVolume(
+      'user-ssh',
+      'initialize-identity',
+      this.config.identity,
+      '600',
+    );
 
     for (let workspace of workspaces) {
       this.output(
@@ -58,13 +40,44 @@ export class DockerComposeFile extends AbstractGeneratedFile {
         JSON.stringify(workspace.raw, undefined, 2),
       );
     }
+
+    this.output('docker-compose.yml', this.buildDockerComposeYAML(workspaces));
   }
 
   private buildDockerComposeYAML(workspaces: Workspace[]): string {
     let config = this.config;
 
+    let sharedVolumes: GeneralDockerVolumeEntry[] = [
+      {
+        type: 'volume',
+        source: 'repositories',
+        target: '/root/repositories',
+      },
+      {
+        type: 'volume',
+        source: 'vscode-extensions',
+        target: '/root/.vscode-server/extensions',
+      },
+      {
+        type: 'volume',
+        source: 'vscode-machine-data',
+        target: '/root/.vscode-server/data/Machine',
+      },
+      {
+        type: 'volume',
+        source: 'user-ssh',
+        target: '/root/.ssh',
+      },
+      {
+        type: 'volume',
+        source: 'ssh',
+        target: '/etc/ssh',
+      },
+      ...config.sharedVolumes,
+    ];
+
     let document = {
-      version: '3',
+      version: '3.2',
       services: _.fromPairs(
         _.flatMap(workspaces, workspace => {
           return [
@@ -73,13 +86,12 @@ export class DockerComposeFile extends AbstractGeneratedFile {
               {
                 image: workspace.image,
                 volumes: [
-                  `${WORKSPACE_SOURCE_PATH(
-                    workspace,
-                  )}:${WORKSPACE_TARGET_PATH}`,
-                  `${REPOSITORIES_SOURCE_PATH}:${REPOSITORIES_TARGET_PATH}`,
-                  `${AUTHORIZED_KEYS_SOURCE_PATH}:${AUTHORIZED_KEYS_TARGET_PATH}`,
-                  `${INITIALIZE_IDENTITY_SOURCE_PATH}:${INITIALIZE_IDENTITY_TARGET_PATH}`,
-                  `${config.volumes.ssh}:${SSH_TARGET_PATH}`,
+                  {
+                    type: 'bind',
+                    source: WORKSPACE_SOURCE_PATH(workspace),
+                    target: '/root/workspace',
+                  },
+                  ...sharedVolumes,
                 ],
                 networks: [NETWORK_NAME(workspace)],
                 ports: [`${workspace.port}:22`],
@@ -100,12 +112,10 @@ export class DockerComposeFile extends AbstractGeneratedFile {
         }),
       ),
       volumes: _.fromPairs(
-        _.values(config.volumes).map(volume => [
-          volume,
-          {
-            external: true,
-          },
-        ]),
+        sharedVolumes
+          .filter(volume => volume.type === 'volume')
+          // tslint:disable-next-line: no-null-keyword
+          .map(({source}) => [source, null]),
       ),
       networks: _.fromPairs(
         workspaces.map(workspace => [
@@ -121,64 +131,4 @@ export class DockerComposeFile extends AbstractGeneratedFile {
       YAML.dump(document),
     ].join('\n');
   }
-
-  //   private buildInitializeScript(workspace: Workspace): string {
-  //     let hosts = _.uniq(
-  //       workspace.projects.map(project => project.git.url.match(/@(.+?):/)![1]),
-  //     );
-
-  //     let sshKeyScansScript = hosts
-  //       .map(
-  //         host =>
-  //           `ssh-keyscan ${ShellQuote.quote([host])} >> /root/.ssh/known_hosts`,
-  //       )
-  //       .join('\n');
-
-  //     let projectsScript = workspace.projects
-  //       .map(
-  //         ({
-  //           name,
-  //           git: {url, branch = 'master', newBranch, depth},
-  //           scripts: {initialize} = {},
-  //         }) => `\
-  // if [ ! -d ${ShellQuote.quote([name])} ]
-  // then
-  //   GIT_SSH_COMMAND="ssh -i ${INITIALIZE_IDENTITY_TARGET_PATH}"\\
-  //     git ${ShellQuote.quote(
-  //       _.compact([
-  //         'clone',
-  //         '--no-checkout',
-  //         '--branch',
-  //         branch,
-  //         depth && `--depth=${depth}`,
-  //         url,
-  //         name,
-  //       ]),
-  //     )}
-  //   ${
-  //     newBranch
-  //       ? `git ${ShellQuote.quote([`-C`, name, `checkout`, `-b`, newBranch])}`
-  //       : ''
-  //   }
-  //   ${initialize || ''}
-  // fi
-  // `,
-  //       )
-  //       .join('\n');
-
-  //     return `\
-  // #!/bin/sh
-
-  // echo -n "${this.config.identity}" > ${INITIALIZE_IDENTITY_TARGET_PATH}
-
-  // chmod 600 ${INITIALIZE_IDENTITY_TARGET_PATH}
-
-  // ${sshKeyScansScript}
-
-  // mkdir -p ${PROJECTS_TARGET_PATH}
-  // cd ${PROJECTS_TARGET_PATH}
-
-  // ${projectsScript}
-  // `;
-  // }
 }

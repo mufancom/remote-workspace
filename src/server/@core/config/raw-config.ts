@@ -6,6 +6,18 @@ export interface RawUserConfig {
   publicKey: string;
 }
 
+export type GeneralDockerVolumeEntry = DockerVolumeEntry;
+
+export interface DockerVolumeEntry {
+  type: 'volume';
+  source: string;
+  target: string;
+}
+
+export interface RawVolumesConfig {
+  shared?: GeneralDockerVolumeEntry[];
+}
+
 export interface RawConfig {
   host?: string;
   port?: number;
@@ -13,8 +25,6 @@ export interface RawConfig {
   identity: string;
   users: RawUserConfig[];
   image?: string;
-  volumes?: {
-    ssh?: string;
-  };
+  volumes?: RawVolumesConfig;
   templates?: RawTemplatesConfig;
 }

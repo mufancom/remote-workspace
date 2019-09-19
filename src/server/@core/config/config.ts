@@ -4,11 +4,7 @@ import * as Path from 'path';
 import {AbstractConfig} from '../../../../bld/node-shared';
 import {RawTemplatesConfig} from '../../../../bld/shared';
 
-import {RawConfig, RawUserConfig} from './raw-config';
-
-export interface VolumesConfig {
-  ssh: string;
-}
+import {GeneralDockerVolumeEntry, RawConfig, RawUserConfig} from './raw-config';
 
 export class Config extends AbstractConfig<RawConfig> {
   readonly dir: string;
@@ -50,10 +46,9 @@ export class Config extends AbstractConfig<RawConfig> {
     return image;
   }
 
-  get volumes(): VolumesConfig {
-    let {volumes = {}} = this.raw;
-    let {ssh = 'remote-dev-ssh'} = volumes;
-    return {ssh};
+  get sharedVolumes(): GeneralDockerVolumeEntry[] {
+    let {volumes: {shared = []} = {}} = this.raw;
+    return shared;
   }
 
   get templates(): RawTemplatesConfig {
