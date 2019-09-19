@@ -36,7 +36,7 @@ export class Daemon {
   private get workspaces(): Workspace[] {
     return this.storage
       .list('workspaces')
-      .map(({port, ...raw}) => new Workspace(raw, port));
+      .map(({port, ...raw}) => new Workspace(raw, port, this.config));
   }
 
   async createWorkspace(options: CreateWorkspaceOptions): Promise<string> {

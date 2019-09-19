@@ -45,6 +45,11 @@ export class Config extends AbstractConfig<RawConfig> {
     return this.raw.users;
   }
 
+  get image(): string {
+    let {image = 'makeflow/remote-dev:latest'} = this.raw;
+    return image;
+  }
+
   get volumes(): VolumesConfig {
     let {volumes = {}} = this.raw;
     let {ssh = 'remote-dev-ssh'} = volumes;

@@ -12,6 +12,7 @@ export interface RawConfig {
   dataDir?: string;
   identity: string;
   users: RawUserConfig[];
+  image?: string;
   volumes?: {
     ssh?: string;
   };

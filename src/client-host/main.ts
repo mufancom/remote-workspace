@@ -91,7 +91,7 @@ Host ${SSH_CONFIG_HOST(workspace)}
         project
           ? [
               '--folder-uri',
-              `${vscodeRemoteURI}${`/root/workspace/projects/${project.name}`}`,
+              `${vscodeRemoteURI}${`/root/workspace/${project.name}`}`,
             ]
           : ['--file-uri', vscodeRemoteURI],
         {

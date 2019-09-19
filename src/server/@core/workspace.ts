@@ -4,8 +4,14 @@ import {
   RawWorkspaceService,
 } from '../../../bld/shared';
 
+import {Config} from './config';
+
 export class Workspace {
-  constructor(private raw: RawWorkspace, readonly port: number) {}
+  constructor(
+    readonly raw: RawWorkspace,
+    readonly port: number,
+    private config: Config,
+  ) {}
 
   get id(): string {
     let {id} = this.raw;
@@ -13,7 +19,7 @@ export class Workspace {
   }
 
   get image(): string {
-    let {image = 'remote-dev:latest'} = this.raw;
+    let {image = this.config.image} = this.raw;
     return image;
   }
 

@@ -1,0 +1,9 @@
+{
+  "name": "remote-dev-initialize",
+  "private": true,
+  "dependencies": {
+    "fs-extra": "^8.1.0",
+    "main-function": "^0.1.2",
+    "villa": "^0.3.1"
+  }
+}
