@@ -80,6 +80,7 @@ The client installation is required for the programmatically updating SSH config
 
 - It updates the SSH configuration file to make VSCode able to read configurations like `Port`, `HostkeyAlias` etc.
 - Currently you still need to configure SSH port forwarding (check out the server example), we may introduce built-in port forwarding in the future.
+- It relies on agent forwarding to access remote repositories, so please make sure local SSH Agent is working.
 
 ## License
 

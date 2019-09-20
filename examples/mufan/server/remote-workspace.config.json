@@ -65,6 +65,7 @@
         "name": "makeflow-web",
         "params": ["branch"],
         "git": {
+          // Currently only SSH is supported.
           "url": "git@gitlab.com:makeflow/makeflow-web.git",
           "branch": "master",
           "newBranch": "${branch}"
