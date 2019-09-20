@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import * as ChildProcess from 'child_process';
 
 import 'villa/platform/node';

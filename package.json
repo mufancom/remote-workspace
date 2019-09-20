@@ -5,6 +5,10 @@
   "repository": "https://github.com/makeflow/remote-container-manager.git",
   "author": "Chengdu Mufan Technology Co., Ltd.",
   "license": "MIT",
+  "bin": {
+    "remote-dev-server": "bld/server/main.js",
+    "remote-dev": "bld/client-host/main.js"
+  },
   "scripts": {
     "update-tsconfigs": "ts-node --project scripts/tsconfig.json scripts/update-tsconfigs.ts",
     "build-ts": "tsc --build",
@@ -16,10 +20,9 @@
     "lint": "yarn lint-prettier && yarn lint-ts",
     "test": "rimraf bld && yarn build && yarn lint"
   },
-  "main": "bld/program/index.js",
   "files": [
     "src/**/*.ts",
-    "bld/program",
+    "bld",
     "!*.tsbuildinfo"
   ],
   "dependencies": {
