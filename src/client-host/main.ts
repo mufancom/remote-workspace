@@ -23,10 +23,11 @@ import {
 import {Config} from './@core';
 
 function SSH_CONFIG_HOST({displayName, port}: WorkspaceMetadata): string {
-  return `${hypenate(displayName, {lowerCase: true}) || 'remote-dev'}-${port}`;
+  return `${hypenate(displayName, {lowerCase: true}) ||
+    'remote-workspace'}-${port}`;
 }
 
-const config = new Config('remote-dev.config.json');
+const config = new Config('remote-workspace.config.json');
 
 main(async () => {
   const apiServer = new Server({
@@ -79,7 +80,7 @@ main(async () => {
 
       if (workspaces) {
         let remoteDevSSHConfigContent = `\
-# remote-dev:start
+# remote-workspace:start
 
 ${workspaces
   .map(workspace => {
@@ -93,13 +94,13 @@ ${workspaces
 Host ${SSH_CONFIG_HOST(workspace)}
   User root
   HostName ${config.remoteHost}
-  HostkeyAlias remote-dev-${config.remoteHost}
+  HostkeyAlias remote-workspace-${config.remoteHost}
   ForwardAgent yes
   Port ${workspace.port}
 ${projectsConfigsContent}`;
   })
   .join('\n')}
-# remote-dev:end`;
+# remote-workspace:end`;
 
         let sshConfigFilePath = config.sshConfigFilePath;
         let sshConfigContent = FSE.existsSync(sshConfigFilePath)
@@ -109,7 +110,7 @@ ${projectsConfigsContent}`;
         let replaced = false;
 
         let updatedSSHConfigContent = sshConfigContent.replace(
-          /^# remote-dev:start$[\s\S]*^# remote-dev:end$/m,
+          /^# remote-workspace:start$[\s\S]*^# remote-workspace:end$/m,
           () => {
             replaced = true;
             return remoteDevSSHConfigContent;

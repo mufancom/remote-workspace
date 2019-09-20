@@ -4,21 +4,21 @@ RUN apt-get update
 
 RUN apt-get install --assume-yes openssh-server
 
-WORKDIR /remote-dev
+WORKDIR /remote-workspace
 
 ENV NODE_VERSION 12.10.0
 
-RUN wget https://nodejs.org/dist/v12.10.0/node-v12.10.0-linux-x64.tar.gz &&\
-  tar -xf node-v12.10.0-linux-x64.tar.gz &&\
+RUN wget https://nodejs.org/dist/v12.10.0/node-v12.10.0-linux-x64.tar.xz &&\
+  tar -xf node-v12.10.0-linux-x64.tar.xz &&\
   mv node-v12.10.0-linux-x64 node &&\
-  rm node-v12.10.0-linux-x64.tar.gz
+  rm node-v12.10.0-linux-x64.tar.xz
 
 COPY initialize initialize
 
-WORKDIR /remote-dev/initialize
+WORKDIR /remote-workspace/initialize
 
-RUN /remote-dev/node/bin/node\
-  /remote-dev/node/lib/node_modules/npm/bin/npm-cli.js install
+RUN /remote-workspace/node/bin/node\
+  /remote-workspace/node/lib/node_modules/npm/bin/npm-cli.js install
 
 WORKDIR /root
 

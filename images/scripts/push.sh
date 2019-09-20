@@ -1,2 +1,2 @@
-docker push makeflow/remote-dev
-docker push makeflow/remote-dev-node
+docker push makeflow/remote-workspace
+docker push makeflow/remote-workspace-node

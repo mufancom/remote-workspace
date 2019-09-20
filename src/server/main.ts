@@ -13,9 +13,9 @@ import {CreateWorkspaceOptions, NEVER} from '../../bld/shared';
 
 import {Config, Daemon, DaemonStorageData} from './@core';
 
-const config = new Config('remote-dev.config.json');
+const config = new Config('remote-workspace.config.json');
 
-const storage = new BoringCache<DaemonStorageData>('.remote-dev.json');
+const storage = new BoringCache<DaemonStorageData>('.remote-workspace.json');
 
 const daemon = new Daemon(config, storage);
 

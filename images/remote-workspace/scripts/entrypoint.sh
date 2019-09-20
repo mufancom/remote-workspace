@@ -4,7 +4,7 @@ echo "Initializing workspace..."
 
 rm --force /root/workspace/.ready
 
-/remote-dev/node/bin/node /remote-dev/initialize
+/remote-workspace/node/bin/node /remote-workspace/initialize
 
 touch /root/workspace/.ready
 

@@ -1,13 +1,13 @@
 {
-  "name": "remote-dev",
+  "name": "remote-workspace",
   "version": "0.1.0",
   "description": "",
-  "repository": "https://github.com/makeflow/remote-dev.git",
+  "repository": "https://github.com/makeflow/remote-workspace.git",
   "author": "Chengdu Mufan Technology Co., Ltd.",
   "license": "MIT",
   "bin": {
-    "remote-dev-server": "bld/server/main.js",
-    "remote-dev": "bld/client-host/main.js"
+    "remote-workspace-server": "bld/server/main.js",
+    "remote-workspace": "bld/client-host/main.js"
   },
   "scripts": {
     "update-tsconfigs": "ts-node --project scripts/tsconfig.json scripts/update-tsconfigs.ts",

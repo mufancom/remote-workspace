@@ -1,2 +1,2 @@
-docker build --tag makeflow/remote-dev remote-dev
-docker build --tag makeflow/remote-dev-node remote-dev-node
+docker build --tag makeflow/remote-workspace remote-workspace
+docker build --tag makeflow/remote-workspace-node remote-workspace-node

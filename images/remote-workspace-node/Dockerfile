@@ -1,4 +1,4 @@
-FROM makeflow/remote-dev
+FROM makeflow/remote-workspace
 
 # start https://github.com/nodejs/docker-node/blob/master/12/buster/Dockerfile
 

@@ -1,5 +1,5 @@
 {
-  "name": "remote-dev-initialize",
+  "name": "remote-workspace-initialize",
   "private": true,
   "dependencies": {
     "fs-extra": "^8.1.0",

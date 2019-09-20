@@ -16,7 +16,7 @@ export class Config extends AbstractConfig<RawConfig> {
   }
 
   get name(): string {
-    let {name = 'remote-dev'} = this.raw;
+    let {name = 'remote-workspace'} = this.raw;
     return name;
   }
 
@@ -47,7 +47,7 @@ export class Config extends AbstractConfig<RawConfig> {
   }
 
   get image(): string {
-    let {image = 'makeflow/remote-dev:latest'} = this.raw;
+    let {image = 'makeflow/remote-workspace:latest'} = this.raw;
     return image;
   }
 
