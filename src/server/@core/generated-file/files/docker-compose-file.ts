@@ -34,12 +34,17 @@ function WORKSPACE_METADATA_SOURCE_PATH(workspace: Workspace): string {
 
 export class DockerComposeFile extends AbstractGeneratedFile {
   async update(workspaces: Workspace[]): Promise<void> {
+    console.info('Updating initialize identity...');
+
     await writeTextFileToVolume(
+      this.config.name,
       'user-ssh',
       'initialize-identity',
       this.config.identity,
       '600',
     );
+
+    console.info('Updating workspace metadata...');
 
     for (let workspace of workspaces) {
       await this.outputFile(
@@ -47,6 +52,8 @@ export class DockerComposeFile extends AbstractGeneratedFile {
         JSON.stringify(workspace.raw, undefined, 2),
       );
     }
+
+    console.info('Updating docker-compose.yml...');
 
     await this.outputFile(
       'docker-compose.yml',
@@ -66,9 +73,13 @@ export class DockerComposeFile extends AbstractGeneratedFile {
       await FSE.remove(Path.join(WORKSPACES_PATH, id));
     }
 
+    console.info('Pruning docker containers...');
+
     await v.awaitable(
       ChildProcess.spawn('docker', ['container', 'prune', '--force']),
     );
+
+    console.info('Pruning docker networks...');
 
     await v.awaitable(
       ChildProcess.spawn('docker', ['network', 'prune', '--force']),

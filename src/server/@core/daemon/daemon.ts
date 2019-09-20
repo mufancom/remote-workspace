@@ -127,9 +127,17 @@ export class Daemon {
   }
 
   private async dockerComposeUp(): Promise<void> {
+    console.info('Updating containers...');
+
     let composeProcess = ChildProcess.spawn(
       'docker-compose',
-      ['--project-name', 'remote-dev', 'up', '--detach', '--remove-orphans'],
+      [
+        '--project-name',
+        this.config.name,
+        'up',
+        '--detach',
+        '--remove-orphans',
+      ],
       {
         cwd: this.dockerComposeFile.dir,
       },
