@@ -1,8 +1,8 @@
 {
-  "name": "remote-container-manager",
+  "name": "remote-dev",
   "version": "0.1.0",
   "description": "",
-  "repository": "https://github.com/makeflow/remote-container-manager.git",
+  "repository": "https://github.com/makeflow/remote-dev.git",
   "author": "Chengdu Mufan Technology Co., Ltd.",
   "license": "MIT",
   "bin": {

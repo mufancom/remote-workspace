@@ -1,7 +1,1 @@
-# Remote Dev Manager
-
-## Connections
-
-Environment
-
-ForwardAgent
+# Remote Dev
