@@ -102,5 +102,7 @@ main(async () => {
 
   await apiServer.start();
 
+  console.info(`Listening on "${config.host}:${config.port}"...`);
+
   return NEVER;
 });

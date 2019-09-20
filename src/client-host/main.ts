@@ -11,6 +11,7 @@ import hypenate from 'hyphenate';
 import _ from 'lodash';
 import {main} from 'main-function';
 import fetch from 'node-fetch';
+import open from 'open';
 
 import {
   NEVER,
@@ -140,6 +141,12 @@ ${projectsConfigsContent}`;
   });
 
   await apiServer.start();
+
+  let url = `http://localhost:${config.port}`;
+
+  console.info(`Visit ${url} to manage workspaces...`);
+
+  await open(url);
 
   return NEVER;
 });
