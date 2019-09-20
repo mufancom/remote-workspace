@@ -133,6 +133,7 @@ export class DockerComposeFile extends AbstractGeneratedFile {
               workspace.id,
               {
                 image: workspace.image,
+                restart: 'always',
                 volumes: [
                   {
                     type: 'bind',
@@ -149,6 +150,7 @@ export class DockerComposeFile extends AbstractGeneratedFile {
               `${workspace.id}_${name}`,
               {
                 ...service,
+                restart: 'always',
                 networks: {
                   [NETWORK_NAME(workspace)]: {
                     aliases: [name],
