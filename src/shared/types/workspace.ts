@@ -4,17 +4,21 @@ export interface RawWorkspaceProjectGit {
   url: string;
   branch?: string;
   newBranch?: string;
-  depth?: number;
 }
 
 export interface RawWorkspaceProjectScripts {
   initialize?: string;
 }
 
+export interface RawWorkspaceProjectSSH {
+  configs?: string[];
+}
+
 export interface RawWorkspaceProject {
   name: string;
   git: RawWorkspaceProjectGit;
   scripts?: RawWorkspaceProjectScripts;
+  ssh?: RawWorkspaceProjectSSH;
 }
 
 export interface RawWorkspaceService {

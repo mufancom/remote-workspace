@@ -32,6 +32,20 @@ main(async () => {
 
   apiServer.route({
     method: 'GET',
+    path: '/workspaces/{id}/log',
+    async handler({params: {id}}, toolkit) {
+      try {
+        let log = await daemon.retrieveWorkspaceLog(id);
+
+        return `<pre>${log.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+      } catch {
+        return toolkit.response('Page not found').code(404);
+      }
+    },
+  });
+
+  apiServer.route({
+    method: 'GET',
     path: '/api/templates',
     handler() {
       return {

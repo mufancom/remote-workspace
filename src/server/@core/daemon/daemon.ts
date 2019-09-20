@@ -31,9 +31,10 @@ export class Daemon {
     private config: Config,
     private storage: BoringCache<DaemonStorageData>,
   ) {
-    this.authorizedKeysFile.update();
-
-    this.dockerComposeUpdate().catch(console.error);
+    this.authorizedKeysFile
+      .update()
+      .then(() => this.dockerComposeUpdate())
+      .catch(console.error);
   }
 
   get workspaceStatuses(): WorkspaceStatus[] {
@@ -86,11 +87,42 @@ export class Daemon {
     await this.dockerComposeUpdate();
   }
 
+  async retrieveWorkspaceLog(id: string): Promise<string> {
+    let logProcess = ChildProcess.spawn('docker', [
+      'logs',
+      '--timestamps',
+      `remote-dev_${id}_1`,
+    ]);
+
+    let log = '';
+
+    logProcess.stdout.on('data', data => {
+      log += data;
+    });
+
+    logProcess.stderr.on('data', data => {
+      log += data;
+    });
+
+    await v.awaitable(logProcess);
+
+    return log
+      .split('\n')
+      .sort()
+      .join('\n');
+  }
+
   private async dockerComposeUpdate(): Promise<void> {
-    this.dockerComposeFile.update(this.workspaces);
+    let workspaces = this.workspaces;
 
     return (this.dockerComposeUpPromise = this.dockerComposeUpPromise
-      .then(() => this.dockerComposeUp())
+      .then(async () => {
+        await this.dockerComposeFile.update(workspaces);
+
+        await this.dockerComposeUp();
+
+        await this.dockerComposeFile.prune(workspaces);
+      })
       .catch(console.error));
   }
 

@@ -6,6 +6,7 @@ import H2O2 from '@hapi/h2o2';
 import {Server} from '@hapi/hapi';
 import * as FSE from 'fs-extra';
 import hypenate from 'hyphenate';
+import _ from 'lodash';
 import {main} from 'main-function';
 import fetch from 'node-fetch';
 
@@ -78,17 +79,23 @@ main(async () => {
 # remote-dev:start
 
 ${workspaces
-  .map(
-    workspace => `\
+  .map(workspace => {
+    let projectsConfigsContent = _.union(
+      ...workspace.projects.map(({ssh: {configs = []} = {}}) => configs),
+    )
+      .map(config => `  ${config}\n`)
+      .join('');
+
+    return `\
 Host ${SSH_CONFIG_HOST(workspace)}
   User root
   HostName ${config.remoteHost}
   HostkeyAlias remote-dev-${config.remoteHost}
   ForwardAgent yes
-  Port ${workspace.port}`,
-  )
-  .join('\n\n')}
-
+  Port ${workspace.port}
+${projectsConfigsContent}`;
+  })
+  .join('\n')}
 # remote-dev:end`;
 
         let sshConfigFilePath = config.sshConfigFilePath;

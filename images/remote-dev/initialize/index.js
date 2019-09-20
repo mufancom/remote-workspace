@@ -20,29 +20,40 @@ main(async () => {
     projects.map(project => project.git.url.match(/@(.+?):/)[1]),
   );
 
-  let knownHostsFileStream = FSE.createWriteStream('/root/.ssh/known_hosts', {
-    encoding: 'utf8',
-    flags: 'a',
-    mode: 0o644,
-  });
-
-  for (let host of hostSet) {
+  let unknownHosts = await v.filter(Array.from(hostSet), async host => {
     try {
       await spawn('ssh-keygen', ['-F', host]);
-      continue;
-    } catch {}
+      return false;
+    } catch {
+      return true;
+    }
+  });
 
-    console.info(`Adding "${host}" to known hosts...`);
+  if (unknownHosts.length) {
+    let knownHostsFileStream = FSE.createWriteStream('/root/.ssh/known_hosts', {
+      encoding: 'utf8',
+      flags: 'a',
+      mode: 0o644,
+    });
 
-    let sshKeyScanProcess = ChildProcess.spawn('ssh-keyscan', [host]);
+    for (let host of unknownHosts) {
+      try {
+        await spawn('ssh-keygen', ['-F', host]);
+        continue;
+      } catch {}
 
-    sshKeyScanProcess.stdout.pipe(knownHostsFileStream);
-    sshKeyScanProcess.stderr.pipe(process.stderr);
+      console.info(`Adding "${host}" to known hosts...`);
 
-    await v.awaitable(sshKeyScanProcess);
+      let sshKeyScanProcess = ChildProcess.spawn('ssh-keyscan', [host]);
+
+      sshKeyScanProcess.stdout.pipe(knownHostsFileStream);
+      sshKeyScanProcess.stderr.pipe(process.stderr);
+
+      await v.awaitable(sshKeyScanProcess);
+    }
+
+    knownHostsFileStream.close();
   }
-
-  knownHostsFileStream.close();
 
   let gitCloneEnv = {
     ...process.env,
@@ -58,16 +69,23 @@ main(async () => {
     let workspacePath = Path.join('/root/workspace');
     let projectPath = Path.join(workspacePath, name);
 
+    if (await exists(projectPath, 'directory')) {
+      console.info(`Skipped project "${name}".`);
+      continue;
+    }
+
+    console.info(`Initializing project "${name}"...`);
+
     if (!(await exists(repositoryPath, 'directory'))) {
+      console.info(`Cloning bare repository...`);
+
       await spawn('git', ['clone', '--bare', url, repositoryPath], {
         env: gitCloneEnv,
         cwd: workspacePath,
       });
     }
 
-    if (await exists(projectPath, 'directory')) {
-      continue;
-    }
+    console.info(`Cloning project...`);
 
     await spawn(
       'git',
@@ -82,11 +100,16 @@ main(async () => {
       {env: gitCloneEnv},
     );
 
+    console.info(`Checking out branch "${newBranch}" from "${branch}"...`);
+
     await spawn('git', ['checkout', '-B', newBranch, branch], {
       cwd: projectPath,
     });
 
     if (scripts.initialize) {
+      console.info('Running initialization scripts...');
+      console.info(scripts.initialize);
+
       await exec(scripts.initialize, {
         cwd: projectPath,
       }).catch(console.error);

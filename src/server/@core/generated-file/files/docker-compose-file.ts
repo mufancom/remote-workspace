@@ -1,11 +1,18 @@
+import * as ChildProcess from 'child_process';
+import * as Path from 'path';
+
+import * as FSE from 'fs-extra';
 import YAML from 'js-yaml';
 import _ from 'lodash';
+import * as v from 'villa';
 
 import {GeneralDockerVolumeEntry} from '../../config';
 import {Workspace} from '../../workspace';
 import {AbstractGeneratedFile} from '../generated-file';
 
 import {writeTextFileToVolume} from './@utils';
+
+const WORKSPACES_PATH = './workspaces';
 
 function NETWORK_NAME(workspace: Workspace): string {
   return `${workspace.id}-network`;
@@ -26,8 +33,8 @@ function WORKSPACE_METADATA_SOURCE_PATH(workspace: Workspace): string {
 // repositories
 
 export class DockerComposeFile extends AbstractGeneratedFile {
-  update(workspaces: Workspace[]): void {
-    writeTextFileToVolume(
+  async update(workspaces: Workspace[]): Promise<void> {
+    await writeTextFileToVolume(
       'user-ssh',
       'initialize-identity',
       this.config.identity,
@@ -35,13 +42,37 @@ export class DockerComposeFile extends AbstractGeneratedFile {
     );
 
     for (let workspace of workspaces) {
-      this.output(
+      await this.outputFile(
         WORKSPACE_METADATA_SOURCE_PATH(workspace),
         JSON.stringify(workspace.raw, undefined, 2),
       );
     }
 
-    this.output('docker-compose.yml', this.buildDockerComposeYAML(workspaces));
+    await this.outputFile(
+      'docker-compose.yml',
+      this.buildDockerComposeYAML(workspaces),
+    );
+  }
+
+  async prune(workspaces: Workspace[]): Promise<void> {
+    let workspaceIdSet = new Set(workspaces.map(workspace => workspace.id));
+
+    let ids = await FSE.readdir(WORKSPACES_PATH);
+
+    let outdatedIds = ids.filter(id => !workspaceIdSet.has(id));
+
+    for (let id of outdatedIds) {
+      console.info(`Removing outdated workspace "${id}"...`);
+      await FSE.remove(Path.join(WORKSPACES_PATH, id));
+    }
+
+    await v.awaitable(
+      ChildProcess.spawn('docker', ['container', 'prune', '--force']),
+    );
+
+    await v.awaitable(
+      ChildProcess.spawn('docker', ['network', 'prune', '--force']),
+    );
   }
 
   private buildDockerComposeYAML(workspaces: Workspace[]): string {

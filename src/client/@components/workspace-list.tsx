@@ -65,12 +65,17 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
       this.launch(workspace).catch(console.error);
     };
 
+    let onLogClick = (): void => {
+      this.log(workspace.id).catch(console.error);
+    };
+
     let onDeleteConfirm = (): void => {
       this.delete(workspace.id).catch(console.error);
     };
 
     return _.compact([
       workspace.ready && <a onClick={onLaunchClick}>Launch</a>,
+      <a onClick={onLogClick}>Log</a>,
       <Popconfirm
         placement="bottom"
         title="Are you sure you want to delete this workspace?"
@@ -107,6 +112,10 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     } else {
       message.loading('Launching VS Code...');
     }
+  }
+
+  private async log(id: string): Promise<void> {
+    window.open(`/workspaces/${id}/log`);
   }
 
   private async delete(id: string): Promise<void> {

@@ -14,14 +14,14 @@ abstract class GeneratedFile extends EventEmitter {
     return Path.join(this.config.dataDir, 'generated-files');
   }
 
-  protected output(
+  protected async outputFile(
     path: string,
     content: string | Buffer,
     options?: FS.WriteFileOptions,
-  ): void {
+  ): Promise<void> {
     let fullPath = Path.resolve(this.dir, path);
 
-    FS.outputFileSync(fullPath, content, options);
+    await FS.outputFile(fullPath, content, options);
   }
 }
 
