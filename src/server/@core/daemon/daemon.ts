@@ -117,11 +117,15 @@ export class Daemon {
 
     return (this.dockerComposeUpPromise = this.dockerComposeUpPromise
       .then(async () => {
+        console.info('Updating docker...');
+
         await this.dockerComposeFile.update(workspaces);
 
         await this.dockerComposeUp();
 
         await this.dockerComposeFile.prune(workspaces);
+
+        console.info('Docker updated...');
       })
       .catch(console.error));
   }

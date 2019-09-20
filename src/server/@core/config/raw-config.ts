@@ -3,7 +3,8 @@ import {RawTemplatesConfig} from '../../../../bld/shared';
 export interface RawUserConfig {
   name: string;
   email: string;
-  publicKey: string;
+  publicKey?: string;
+  publicKeyFile?: string;
 }
 
 export type GeneralDockerVolumeEntry = DockerVolumeEntry;

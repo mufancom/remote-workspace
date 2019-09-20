@@ -64,7 +64,13 @@ export class DockerComposeFile extends AbstractGeneratedFile {
   async prune(workspaces: Workspace[]): Promise<void> {
     let workspaceIdSet = new Set(workspaces.map(workspace => workspace.id));
 
-    let ids = await FSE.readdir(WORKSPACES_PATH);
+    let ids: string[];
+
+    try {
+      ids = await FSE.readdir(WORKSPACES_PATH);
+    } catch {
+      ids = [];
+    }
 
     let outdatedIds = ids.filter(id => !workspaceIdSet.has(id));
 
