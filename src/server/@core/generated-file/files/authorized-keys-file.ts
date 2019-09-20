@@ -34,6 +34,11 @@ export class AuthorizedKeysFile extends AbstractGeneratedFile {
   }
 
   async update(): Promise<void> {
-    await writeTextFileToVolume('user-ssh', 'authorized_keys', this.content);
+    await writeTextFileToVolume(
+      this.config.name,
+      'user-ssh',
+      'authorized_keys',
+      this.content,
+    );
   }
 }

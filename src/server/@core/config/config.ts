@@ -15,6 +15,11 @@ export class Config extends AbstractConfig<RawConfig> {
     this.dir = Path.dirname(path);
   }
 
+  get name(): string {
+    let {name = 'remote-dev'} = this.raw;
+    return name;
+  }
+
   get host(): string {
     let {host = '0.0.0.0'} = this.raw;
     return host;

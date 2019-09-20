@@ -19,6 +19,7 @@ export interface RawVolumesConfig {
 }
 
 export interface RawConfig {
+  name?: string;
   host?: string;
   port?: number;
   dataDir?: string;

@@ -5,6 +5,7 @@ import * as ShellQuote from 'shell-quote';
 import * as v from 'villa';
 
 export async function writeTextFileToVolume(
+  dockerComposeProjectName: string,
   volume: string,
   path: string,
   text: string,
@@ -26,7 +27,7 @@ export async function writeTextFileToVolume(
     'run',
     '--rm',
     '--volume',
-    `remote-dev_${volume}:/volume`,
+    `${dockerComposeProjectName}_${volume}:/volume`,
     'alpine',
     'sh',
     '-c',

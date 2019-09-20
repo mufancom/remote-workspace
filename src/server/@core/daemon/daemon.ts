@@ -91,7 +91,7 @@ export class Daemon {
     let logProcess = ChildProcess.spawn('docker', [
       'logs',
       '--timestamps',
-      `remote-dev_${id}_1`,
+      `${this.config.name}_${id}_1`,
     ]);
 
     let log = '';
