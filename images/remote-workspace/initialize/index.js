@@ -17,7 +17,9 @@ main(async () => {
   // prepare projects
 
   let hostSet = new Set(
-    projects.map(project => project.git.url.match(/@(.+?):/)[1]),
+    projects
+      .map(project => (project.git.url.match(/@(.+?):/) || [])[1])
+      .filter(host => !!host),
   );
 
   let unknownHosts = await v.filter(Array.from(hostSet), async host => {
