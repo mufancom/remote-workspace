@@ -36,7 +36,7 @@ export class AuthorizedKeysFile extends AbstractGeneratedFile {
             `environment="GIT_COMMITTER_NAME=${name}"`,
             `environment="GIT_COMMITTER_EMAIL=${email}"`,
           ].join(','),
-          publicKey,
+          publicKey.trim(),
         ].join(' ');
 
         return `${line}\n`;

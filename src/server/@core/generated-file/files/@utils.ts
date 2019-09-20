@@ -17,7 +17,7 @@ export async function writeTextFileToVolume(
 
   let quotedPath = ShellQuote.quote([Path.posix.join('/volume', path)]);
 
-  let commands = [`echo ${ShellQuote.quote([text])} >> ${quotedPath}`];
+  let commands = [`echo ${ShellQuote.quote([text])} > ${quotedPath}`];
 
   if (mode) {
     commands.push(`chmod ${ShellQuote.quote([mode])} ${quotedPath}`);
