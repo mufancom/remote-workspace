@@ -1,0 +1,134 @@
+// Check out source code for complete configuration.
+{
+  // Identity file used for Git clone during workspace initialization.
+  "identityFile": "remote-workspace-id_rsa",
+  "users": [
+    {
+      // User name and email will be added to the environment variable for Git
+      // during SSH session.
+      "name": "vilicvane",
+      "email": "foo@bar.pia",
+      // Public key for user to connect remote workspaces using SSH.
+      "publicKeyFile": "users/vilicvane/id_rsa.pub"
+    }
+  ],
+  // You can use your customized workspace image based on
+  // `makeflow/remote-workspace` (which is based `buildpack-deps:bionic`).
+  // If you want to use another image, please checkout the Dockerfile of
+  // `makeflow/remote-workspace` and make sure you have added equivelent
+  // stuffs.
+  "image": "makeflow/remote-workspace-node:latest",
+  "volumes": {
+    "shared": [
+      // Provide shared configuration for initialization.
+      {
+        "type": "bind",
+        "source": "../configs",
+        "target": "/root/configs"
+      },
+      // Yarn caches.
+      {
+        "type": "volume",
+        "source": "yarn",
+        "target": "/root/.yarn"
+      },
+      {
+        "type": "volume",
+        "source": "yarn-cache",
+        "target": "/root/.yarn-cache"
+      }
+    ]
+  },
+  "templates": {
+    "workspaces": [
+      {
+        "name": "default",
+        "params": ["branch"],
+        "displayName": "${branch}"
+      },
+      {
+        "name": "makeflow-web",
+        "params": ["branch"],
+        "displayName": "${branch}",
+        "projects": ["makeflow-web"],
+        "services": ["mongo", "redis", "zookeeper"]
+      },
+      {
+        "name": "syncable",
+        "params": ["branch"],
+        "displayName": "${branch}",
+        "projects": ["syncable"]
+      }
+    ],
+    "projects": [
+      {
+        "name": "makeflow-web",
+        "params": ["branch"],
+        "git": {
+          "url": "git@gitlab.com:makeflow/makeflow-web.git",
+          "branch": "master",
+          "newBranch": "${branch}"
+        },
+        "ssh": {
+          "configs": [
+            "LocalForward 127.0.0.1:8080 127.0.0.1:8080",
+            "LocalForward 127.0.0.1:8088 127.0.0.1:8088"
+          ]
+        },
+        "scripts": {
+          "initialize": "yarn && mkdir -p .config && cp /root/configs/makeflow-web-server.js .config/server.js && yarn build-server-program && yarn workspace server create-samples"
+        }
+      },
+      {
+        "name": "makeflow-ui",
+        "params": ["branch"],
+        "git": {
+          "url": "git@gitlab.com:makeflow/makeflow-ui.git",
+          "branch": "master",
+          "newBranch": "${branch}"
+        },
+        "scripts": {
+          "initialize": "yarn"
+        }
+      },
+      {
+        "name": "syncable",
+        "params": ["branch"],
+        "git": {
+          "url": "git@github.com:makeflow/syncable.git",
+          "branch": "master",
+          "newBranch": "${branch}"
+        },
+        "scripts": {
+          "initialize": "yarn"
+        }
+      },
+      {
+        "name": "boring-router",
+        "params": ["branch"],
+        "git": {
+          "url": "git@github.com:makeflow/boring-router.git",
+          "branch": "master",
+          "newBranch": "${branch}"
+        },
+        "scripts": {
+          "initialize": "yarn"
+        }
+      }
+    ],
+    "services": [
+      {
+        "name": "mongo",
+        "image": "mongo"
+      },
+      {
+        "name": "redis",
+        "image": "redis"
+      },
+      {
+        "name": "zookeeper",
+        "image": "zookeeper"
+      }
+    ]
+  }
+}

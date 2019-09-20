@@ -36,8 +36,8 @@ export class Config extends AbstractConfig<RawConfig> {
   }
 
   get identity(): string {
-    let {identity} = this.raw;
-    let path = Path.join(this.dir, identity);
+    let {identityFile} = this.raw;
+    let path = Path.join(this.dir, identityFile);
 
     return FS.readFileSync(path, 'utf-8');
   }

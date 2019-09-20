@@ -1,0 +1,6 @@
+// Check out source code for complete configuration.
+{
+  "remote": {
+    "host": "remote-workspace.example.com"
+  }
+}

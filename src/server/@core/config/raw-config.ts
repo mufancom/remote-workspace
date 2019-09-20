@@ -24,7 +24,7 @@ export interface RawConfig {
   host?: string;
   port?: number;
   dataDir?: string;
-  identity: string;
+  identityFile: string;
   users: RawUserConfig[];
   image?: string;
   volumes?: RawVolumesConfig;
