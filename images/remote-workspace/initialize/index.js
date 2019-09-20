@@ -22,7 +22,7 @@ main(async () => {
 
   let unknownHosts = await v.filter(Array.from(hostSet), async host => {
     try {
-      await spawn('ssh-keygen', ['-F', host]);
+      await spawn('ssh-keygen', ['-F', host], {stdio: 'ignore'});
       return false;
     } catch {
       return true;
@@ -37,17 +37,11 @@ main(async () => {
     });
 
     for (let host of unknownHosts) {
-      try {
-        await spawn('ssh-keygen', ['-F', host]);
-        continue;
-      } catch {}
-
       console.info(`Adding "${host}" to known hosts...`);
 
       let sshKeyScanProcess = ChildProcess.spawn('ssh-keyscan', [host]);
 
       sshKeyScanProcess.stdout.pipe(knownHostsFileStream);
-      sshKeyScanProcess.stderr.pipe(process.stderr);
 
       await v.awaitable(sshKeyScanProcess);
     }
