@@ -13,11 +13,12 @@
     "build": "yarn build-ts && yarn build:client",
     "lint-ts": "ts-node --project scripts/tsconfig.json scripts/lint-ts.ts",
     "lint-prettier": "prettier --check \"**/*.{ts,tsx,js,jsx,json,yml,md}\"",
-    "lint": "yarn lint-prettier && yarn lint-ts"
+    "lint": "yarn lint-prettier && yarn lint-ts",
+    "test": "rimraf bld && yarn build && yarn lint"
   },
   "main": "bld/program/index.js",
   "files": [
-    "src/program/**/*.ts",
+    "src/**/*.ts",
     "bld/program",
     "!*.tsbuildinfo"
   ],
@@ -66,6 +67,7 @@
     "glob": "^7.1.4",
     "parcel-bundler": "^1.12.3",
     "prettier": "^1.18.2",
+    "rimraf": "^3.0.0",
     "ts-node": "^8.4.1",
     "tslib": "^1.10.0",
     "tslint": "^5.20.0",

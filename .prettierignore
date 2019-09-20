@@ -1,5 +1,7 @@
 **/bld/**
 **/coverage/**
+**/.cache/**
+**/*-workdir/**
 
 package.json
 lerna.json
