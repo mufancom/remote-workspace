@@ -39,7 +39,14 @@ main(async () => {
       try {
         let log = await daemon.retrieveWorkspaceLog(id);
 
-        return `<pre>${log.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+        let refreshHTML =
+          log.length > 10000
+            ? '<div>Log too long, auto refresh disabled.</div>'
+            : '<meta http-equiv="refresh" content="10" />';
+
+        return `${refreshHTML}<pre>${log
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')}</pre>`;
       } catch {
         return toolkit.response('Page not found').code(404);
       }
