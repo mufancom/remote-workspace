@@ -55,6 +55,7 @@ The `remote-workspace` package provides two commands for server and client respe
 
 #### Prerequisites
 
+- VSCode with Remote Development extension. Some of the folder names are hard-coded, you may want to use the stable version of the extension to avoid folder name mismatching.
 - Node.js v10+ (we are using v12).
 
 #### Usage
