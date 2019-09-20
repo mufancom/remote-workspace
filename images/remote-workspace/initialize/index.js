@@ -126,8 +126,13 @@ async function spawn(command, args, options) {
     },
   );
 
-  subprocess.stdout.pipe(process.stdout);
-  subprocess.stderr.pipe(process.stderr);
+  if (subprocess.stdout) {
+    subprocess.stdout.pipe(process.stdout);
+  }
+
+  if (subprocess.stderr) {
+    subprocess.stderr.pipe(process.stderr);
+  }
 
   await v.awaitable(subprocess);
 }
@@ -139,8 +144,13 @@ async function spawn(command, args, options) {
 async function exec(command, options) {
   let subprocess = ChildProcess.exec(command, options);
 
-  subprocess.stdout.pipe(process.stdout);
-  subprocess.stderr.pipe(process.stderr);
+  if (subprocess.stdout) {
+    subprocess.stdout.pipe(process.stdout);
+  }
+
+  if (subprocess.stderr) {
+    subprocess.stderr.pipe(process.stderr);
+  }
 
   await v.awaitable(subprocess);
 }
