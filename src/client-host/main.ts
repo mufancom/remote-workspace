@@ -143,7 +143,7 @@ ${projectsConfigsContent}`;
 
   await apiServer.start();
 
-  let url = `http://localhost:${config.port}`;
+  let url = `http://remote-workspace.localhost:${config.port}`;
 
   console.info(`Visit ${url} to manage workspaces...`);
 

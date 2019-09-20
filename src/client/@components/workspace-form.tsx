@@ -129,6 +129,10 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
   @computed
   private get missingParams(): boolean {
+    if (this._optionsJSON) {
+      return false;
+    }
+
     let presentParamKeySet = new Set(
       Object.entries(this.paramDict)
         .filter(([, value]) => !!value)
