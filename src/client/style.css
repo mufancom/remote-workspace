@@ -15,3 +15,12 @@
 .buttons-line > button:not(:first-child) {
   margin-left: 10px;
 }
+
+.workspace-list-item-meta:not(.ready) {
+  opacity: 0.5;
+}
+
+.ant-page-header-heading-extra {
+  position: relative;
+  top: 8px;
+}

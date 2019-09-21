@@ -156,6 +156,7 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
     let options: CreateWorkspaceOptions = {
       displayName,
+      owner: localStorage.email,
       projects: this.selectedProjectTemplates.map(({params, ...rest}) => rest),
       services: this.selectedServiceTemplates.map(({params, ...rest}) => rest),
     };

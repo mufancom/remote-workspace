@@ -29,6 +29,7 @@ export interface RawWorkspaceService {
 export interface RawWorkspace {
   id: string;
   displayName: string;
+  owner?: string;
   image?: string;
   projects: RawWorkspaceProject[];
   services?: RawWorkspaceService[];

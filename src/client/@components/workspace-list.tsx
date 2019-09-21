@@ -1,5 +1,7 @@
 import {Avatar, List, Popconfirm, message} from 'antd';
+import classNames from 'classnames';
 import _ from 'lodash';
+import md5 from 'md5';
 import {observable} from 'mobx';
 import {observer} from 'mobx-react';
 import React, {Component, ReactNode} from 'react';
@@ -8,14 +10,26 @@ import {WorkspaceStatus} from '../../../bld/shared';
 
 const REFRESH_INTERVAL_DEFAULT = 10000;
 
-export interface WorkspaceListProps {}
+export interface WorkspaceListProps {
+  all: boolean;
+}
 
 @observer
 export class WorkspaceList extends Component<WorkspaceListProps> {
   private timer: number | undefined;
 
   @observable
-  private workspaces: WorkspaceStatus[] = [];
+  private _workspaces: WorkspaceStatus[] = [];
+
+  private get workspaces(): WorkspaceStatus[] {
+    if (this.props.all) {
+      return this._workspaces;
+    }
+
+    let owner = localStorage.email;
+
+    return this._workspaces.filter(workspace => workspace.owner === owner);
+  }
 
   render(): ReactNode {
     return (
@@ -24,15 +38,15 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
         renderItem={workspace => (
           <List.Item actions={this.renderActions(workspace)}>
             <List.Item.Meta
+              className={classNames('workspace-list-item-meta', {
+                ready: workspace.ready,
+              })}
               avatar={
-                workspace.ready ? (
-                  <Avatar icon="check" style={{backgroundColor: '#52c41a'}} />
-                ) : (
-                  <Avatar
-                    icon="ellipsis"
-                    style={{backgroundColor: '#1890ff'}}
-                  />
-                )
+                <Avatar
+                  src={`https://www.gravatar.com/avatar/${md5(
+                    workspace.owner || '',
+                  )}?size=64`}
+                />
               }
               title={workspace.displayName || workspace.id}
               description={
@@ -92,7 +106,7 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     let {data} = (await response.json()) as {data?: WorkspaceStatus[]};
 
     if (data) {
-      this.workspaces = data;
+      this._workspaces = data;
     }
   }
 
