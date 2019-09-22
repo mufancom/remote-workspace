@@ -4,16 +4,23 @@ import * as Path from 'path';
 import {BoringCache} from 'boring-cache';
 import * as FSE from 'fs-extra';
 import getPort from 'get-port';
+import _ from 'lodash';
 import uuid from 'uuid';
 import * as v from 'villa';
 
 import {
   CreateWorkspaceOptions,
+  RawWorkspaceProjectGit,
   WorkspaceMetadata,
   WorkspaceStatus,
 } from '../../../../bld/shared';
+import {parseGitURL} from '../../@utils';
 import {Config} from '../config';
 import {AuthorizedKeysFile, DockerComposeFile} from '../generated-file';
+import {
+  generateCreatePullMergeRequestInfo,
+  listPullMergeRequests,
+} from '../git-services';
 import {Workspace} from '../workspace';
 
 export interface DaemonStorageData {
@@ -37,21 +44,115 @@ export class Daemon {
       .catch(console.error);
   }
 
-  get workspaceStatuses(): WorkspaceStatus[] {
-    return this.storage.list('workspaces').map(
-      (metadata): WorkspaceStatus => {
-        return {
-          ...metadata,
-          ready: FSE.existsSync(Path.join('workspaces', metadata.id, '.ready')),
-        };
-      },
-    );
-  }
-
   private get workspaces(): Workspace[] {
     return this.storage
       .list('workspaces')
       .map(({port, ...raw}) => new Workspace(raw, port, this.config));
+  }
+
+  async getWorkspaceStatuses(): Promise<WorkspaceStatus[]> {
+    let gitHostToServiceConfigMap = this.config.gitHostToServiceConfigMap;
+
+    let workspaces = await v.map(
+      this.storage.list('workspaces'),
+      async (metadata): Promise<WorkspaceStatus> => {
+        return {
+          ...metadata,
+          ready: await FSE.stat(
+            Path.join('workspaces', metadata.id, '.ready'),
+          ).then(() => true, () => false),
+        };
+      },
+    );
+
+    let projectInfos = _.compact(
+      _.uniqWith(
+        _.compact(
+          _.flattenDeep(
+            workspaces.map(workspace =>
+              workspace.projects.map(({git: {url}}) => parseGitURL(url)),
+            ),
+          ),
+        ),
+        _.isEqual as () => boolean,
+      ).map(info => {
+        let service = gitHostToServiceConfigMap.get(info.host);
+
+        return (
+          service && {
+            ...info,
+            service,
+          }
+        );
+      }),
+    );
+
+    let pullMergeRequestInfos = await listPullMergeRequests(projectInfos);
+
+    return workspaces.map(workspace => {
+      return {
+        ...workspace,
+        projects: workspace.projects.map(project => {
+          let {
+            url,
+            branch: targetBranch = 'master',
+            newBranch: sourceBranch = targetBranch,
+          }: RawWorkspaceProjectGit = project.git;
+
+          let urlInfo = parseGitURL(url);
+
+          if (!urlInfo) {
+            return project;
+          }
+
+          let {host, project: projectPath} = urlInfo;
+
+          let pullMergeRequestInfo = pullMergeRequestInfos.find(
+            info =>
+              info.host === host &&
+              info.project === projectPath &&
+              info.targetBranch === targetBranch &&
+              info.sourceBranch === sourceBranch,
+          );
+
+          if (pullMergeRequestInfo) {
+            let {id, url, state} = pullMergeRequestInfo;
+
+            return {
+              ...project,
+              git: {
+                ...project.git,
+                pullMergeRequest: {
+                  text: `#${id}`,
+                  url,
+                  state,
+                },
+              },
+            };
+          }
+
+          let serviceConfig = gitHostToServiceConfigMap.get(host);
+
+          let createPullMergeRequestInfo =
+            serviceConfig &&
+            generateCreatePullMergeRequestInfo(
+              host,
+              projectPath,
+              sourceBranch,
+              targetBranch,
+              serviceConfig,
+            );
+
+          return {
+            ...project,
+            git: {
+              ...project.git,
+              pullMergeRequest: createPullMergeRequestInfo,
+            },
+          };
+        }),
+      };
+    });
   }
 
   async createWorkspace(options: CreateWorkspaceOptions): Promise<string> {

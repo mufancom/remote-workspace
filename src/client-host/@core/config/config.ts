@@ -3,7 +3,7 @@ import * as Path from 'path';
 
 import {AbstractConfig} from '../../../../bld/node-shared';
 
-import {RawConfig, RawGitServiceConfig} from './raw-config';
+import {RawConfig} from './raw-config';
 
 export class Config extends AbstractConfig<RawConfig> {
   constructor(path: string) {
@@ -33,38 +33,10 @@ export class Config extends AbstractConfig<RawConfig> {
   }
 
   get sshConfigFilePath(): string {
-    let {sshConfig} = this.raw;
+    let {sshConfigFile} = this.raw;
 
-    return sshConfig
-      ? Path.resolve(sshConfig)
+    return sshConfigFile
+      ? Path.resolve(sshConfigFile)
       : Path.join(OS.homedir(), '.ssh/config');
-  }
-
-  get gitHostToServiceConfigMap(): Map<string, RawGitServiceConfig> {
-    let {gitServices = []} = this.raw;
-
-    if (!gitServices.some(service => service.type === 'github')) {
-      gitServices.push({
-        type: 'github',
-      });
-    }
-
-    if (
-      !gitServices.some(
-        service => service.type === 'gitlab' && service.host === 'gitlab.com',
-      )
-    ) {
-      gitServices.push({
-        type: 'gitlab',
-        host: 'gitlab.com',
-      });
-    }
-
-    return new Map(
-      gitServices.map(config => [
-        config.type === 'github' ? 'github.com' : config.host || 'gitlab.com',
-        config,
-      ]),
-    );
   }
 }

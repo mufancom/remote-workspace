@@ -4,7 +4,12 @@ import * as Path from 'path';
 import {AbstractConfig} from '../../../../bld/node-shared';
 import {RawTemplatesConfig} from '../../../../bld/shared';
 
-import {GeneralDockerVolumeEntry, RawConfig, RawUserConfig} from './raw-config';
+import {
+  GeneralDockerVolumeEntry,
+  RawConfig,
+  RawGitServiceConfig,
+  RawUserConfig,
+} from './raw-config';
 
 export class Config extends AbstractConfig<RawConfig> {
   readonly dir: string;
@@ -59,5 +64,34 @@ export class Config extends AbstractConfig<RawConfig> {
   get templates(): RawTemplatesConfig {
     let {templates = {}} = this.raw;
     return templates;
+  }
+
+  get gitHostToServiceConfigMap(): Map<string, RawGitServiceConfig> {
+    let {git = {}} = this.raw;
+    let {services = []} = git;
+
+    if (!services.some(service => service.type === 'github')) {
+      services.push({
+        type: 'github',
+      });
+    }
+
+    if (
+      !services.some(
+        service => service.type === 'gitlab' && service.host === 'gitlab.com',
+      )
+    ) {
+      services.push({
+        type: 'gitlab',
+        host: 'gitlab.com',
+      });
+    }
+
+    return new Map(
+      services.map(config => [
+        config.type === 'github' ? 'github.com' : config.host || 'gitlab.com',
+        config,
+      ]),
+    );
   }
 }

@@ -131,5 +131,14 @@
         "image": "zookeeper"
       }
     ]
-  }
+  },
+  "gitServices": [
+    {
+      "type": "gitlab",
+      "host": "gitlab.com",
+      "credentials": {
+        "accessToken": "[access token]"
+      }
+    }
+  ]
 }

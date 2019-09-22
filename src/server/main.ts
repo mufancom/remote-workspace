@@ -66,9 +66,9 @@ main(async () => {
   apiServer.route({
     method: 'GET',
     path: '/api/workspaces',
-    handler() {
+    async handler() {
       return {
-        data: daemon.workspaceStatuses,
+        data: await daemon.getWorkspaceStatuses(),
       };
     },
   });

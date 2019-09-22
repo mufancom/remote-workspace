@@ -13,19 +13,9 @@ import {main} from 'main-function';
 import fetch from 'node-fetch';
 import open from 'open';
 
-import {
-  NEVER,
-  RawWorkspaceProjectGit,
-  WorkspaceMetadata,
-  WorkspaceStatus,
-} from '../../bld/shared';
+import {NEVER, WorkspaceMetadata, WorkspaceStatus} from '../../bld/shared';
 
-import {
-  Config,
-  generateCreatePullMergeRequestInfo,
-  listPullMergeRequests,
-} from './@core';
-import {parseGitURL} from './@utils';
+import {Config} from './@core';
 
 function SSH_CONFIG_HOST({displayName, port}: WorkspaceMetadata): string {
   return `${hypenate(displayName, {lowerCase: true}) ||
@@ -33,8 +23,6 @@ function SSH_CONFIG_HOST({displayName, port}: WorkspaceMetadata): string {
 }
 
 const config = new Config('remote-workspace.config.json');
-
-const gitHostToServiceConfigMap = config.gitHostToServiceConfigMap;
 
 main(async () => {
   const apiServer = new Server({
@@ -139,102 +127,9 @@ ${projectsConfigsContent}`;
         if (updatedSSHConfigContent !== sshConfigContent) {
           FSE.outputFileSync(sshConfigFilePath, updatedSSHConfigContent);
         }
-
-        // Retrieve pull/merge request information
-
-        let projectInfos = _.compact(
-          _.uniqWith(
-            _.compact(
-              _.flattenDeep(
-                workspaces.map(workspace =>
-                  workspace.projects.map(({git: {url}}) => parseGitURL(url)),
-                ),
-              ),
-            ),
-            _.isEqual as () => boolean,
-          ).map(info => {
-            let service = gitHostToServiceConfigMap.get(info.host);
-
-            return (
-              service && {
-                ...info,
-                service,
-              }
-            );
-          }),
-        );
-
-        let pullMergeRequestInfos = await listPullMergeRequests(projectInfos);
-
-        return {
-          data: workspaces.map(workspace => {
-            return {
-              ...workspace,
-              projects: workspace.projects.map(project => {
-                let {
-                  url,
-                  branch: targetBranch = 'master',
-                  newBranch: sourceBranch = targetBranch,
-                }: RawWorkspaceProjectGit = project.git;
-
-                let urlInfo = parseGitURL(url);
-
-                if (!urlInfo) {
-                  return project;
-                }
-
-                let {host, project: projectPath} = urlInfo;
-
-                let pullMergeRequestInfo = pullMergeRequestInfos.find(
-                  info =>
-                    info.host === host &&
-                    info.project === projectPath &&
-                    info.targetBranch === targetBranch &&
-                    info.sourceBranch === sourceBranch,
-                );
-
-                if (pullMergeRequestInfo) {
-                  let {id, url, state} = pullMergeRequestInfo;
-
-                  return {
-                    ...project,
-                    git: {
-                      ...project.git,
-                      pullMergeRequest: {
-                        text: `#${id}`,
-                        url,
-                        state,
-                      },
-                    },
-                  };
-                }
-
-                let serviceConfig = gitHostToServiceConfigMap.get(host);
-
-                let createPullMergeRequestInfo =
-                  serviceConfig &&
-                  generateCreatePullMergeRequestInfo(
-                    host,
-                    projectPath,
-                    sourceBranch,
-                    targetBranch,
-                    serviceConfig,
-                  );
-
-                return {
-                  ...project,
-                  git: {
-                    ...project.git,
-                    pullMergeRequest: createPullMergeRequestInfo,
-                  },
-                };
-              }),
-            };
-          }),
-        };
-      } else {
-        return result;
       }
+
+      return result;
     },
   });
 
