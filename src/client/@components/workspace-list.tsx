@@ -4,9 +4,13 @@ import _ from 'lodash';
 import md5 from 'md5';
 import {observable} from 'mobx';
 import {observer} from 'mobx-react';
-import React, {Component, ReactNode} from 'react';
+import React, {Component, Fragment, ReactNode} from 'react';
 
-import {WorkspaceStatus} from '../../../bld/shared';
+import {
+  WorkspaceProjectWithPullMergeRequestInfo,
+  WorkspaceStatus,
+  WorkspaceStatusWithPullMergeRequestInfo,
+} from '../../../bld/shared';
 
 const REFRESH_INTERVAL_DEFAULT = 10000;
 
@@ -19,9 +23,9 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
   private timer: number | undefined;
 
   @observable
-  private _workspaces: WorkspaceStatus[] = [];
+  private _workspaces: WorkspaceStatusWithPullMergeRequestInfo[] = [];
 
-  private get workspaces(): WorkspaceStatus[] {
+  private get workspaces(): WorkspaceStatusWithPullMergeRequestInfo[] {
     if (this.props.all) {
       return this._workspaces;
     }
@@ -35,27 +39,36 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     return (
       <List
         dataSource={this.workspaces}
-        renderItem={workspace => (
-          <List.Item actions={this.renderActions(workspace)}>
-            <List.Item.Meta
-              className={classNames('workspace-list-item-meta', {
-                ready: workspace.ready,
-              })}
-              avatar={
-                <Avatar
-                  src={`https://www.gravatar.com/avatar/${md5(
-                    workspace.owner || '',
-                  )}?size=64`}
-                />
-              }
-              title={workspace.displayName || workspace.id}
-              description={
-                workspace.projects.map(project => project.name).join(', ') ||
-                '-'
-              }
-            ></List.Item.Meta>
-          </List.Item>
-        )}
+        renderItem={workspace => {
+          let projects = workspace.projects;
+
+          return (
+            <List.Item actions={this.renderActions(workspace)}>
+              <List.Item.Meta
+                className={classNames('workspace-list-item-meta', {
+                  ready: workspace.ready,
+                })}
+                avatar={
+                  <Avatar
+                    src={`https://www.gravatar.com/avatar/${md5(
+                      workspace.owner || '',
+                    )}?size=64`}
+                  />
+                }
+                title={workspace.displayName || workspace.id}
+                description={
+                  projects.length ? (
+                    _.flatMap(projects, (project, index) =>
+                      this.renderProject(workspace, project, index, projects),
+                    )
+                  ) : (
+                    <span>-</span>
+                  )
+                }
+              ></List.Item.Meta>
+            </List.Item>
+          );
+        }}
       />
     );
   }
@@ -88,35 +101,82 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     };
 
     return _.compact([
-      workspace.ready && <a onClick={onLaunchClick}>Launch</a>,
-      <a onClick={onLogClick}>Log</a>,
+      workspace.ready && <a onClick={onLaunchClick}>launch</a>,
+      <a onClick={onLogClick}>log</a>,
       <Popconfirm
         placement="bottom"
         title="Are you sure you want to delete this workspace?"
         onConfirm={onDeleteConfirm}
       >
-        <a>Delete</a>
+        <a>delete</a>
       </Popconfirm>,
     ]);
+  }
+
+  private renderProject(
+    workspace: WorkspaceStatusWithPullMergeRequestInfo,
+    {name, git: {pullMergeRequest}}: WorkspaceProjectWithPullMergeRequestInfo,
+    index: number,
+    projects: WorkspaceProjectWithPullMergeRequestInfo[],
+  ): ReactNode {
+    return (
+      <Fragment key={index}>
+        {workspace.ready ? (
+          <span>
+            <a
+              className="project-name"
+              onClick={() => this.launch(workspace, name)}
+            >
+              {name}
+            </a>
+            {pullMergeRequest ? (
+              <span className="pull-merge-request">
+                (
+                <a
+                  className={pullMergeRequest.state}
+                  href={pullMergeRequest.url}
+                >
+                  {pullMergeRequest.text}
+                </a>
+                )
+              </span>
+            ) : (
+              undefined
+            )}
+          </span>
+        ) : (
+          <span className="project-name">{name}</span>
+        )}
+        {index < projects.length - 1 ? <span>, </span> : undefined}
+      </Fragment>
+    );
   }
 
   private async _refresh(): Promise<void> {
     let response = await fetch('/api/workspaces');
 
-    let {data} = (await response.json()) as {data?: WorkspaceStatus[]};
+    let {data} = (await response.json()) as {
+      data?: WorkspaceStatusWithPullMergeRequestInfo[];
+    };
 
     if (data) {
       this._workspaces = data;
     }
   }
 
-  private async launch(workspace: WorkspaceStatus): Promise<void> {
+  private async launch(
+    workspace: WorkspaceStatus,
+    projectName?: string,
+  ): Promise<void> {
     let response = await fetch('/api/launch', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(workspace),
+      body: JSON.stringify({
+        workspace,
+        project: projectName,
+      }),
     });
 
     let {error} = await response.json();

@@ -20,6 +20,23 @@
   opacity: 0.5;
 }
 
+.workspace-list-item-meta .pull-merge-request {
+  margin-left: 4px;
+}
+
+.workspace-list-item-meta .pull-merge-request a {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.workspace-list-item-meta .pull-merge-request a:hover {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.workspace-list-item-meta .pull-merge-request a.merged,
+.workspace-list-item-meta .pull-merge-request a.closed {
+  text-decoration: line-through;
+}
+
 .ant-page-header-heading-extra {
   position: relative;
   top: 8px;
