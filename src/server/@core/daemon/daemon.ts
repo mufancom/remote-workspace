@@ -17,11 +17,12 @@ import {
 import {parseGitURL} from '../../@utils';
 import {Config} from '../config';
 import {AuthorizedKeysFile, DockerComposeFile} from '../generated-file';
+import {Workspace} from '../workspace';
+
 import {
   generateCreatePullMergeRequestInfo,
   listPullMergeRequests,
-} from '../git-services';
-import {Workspace} from '../workspace';
+} from './@git-services';
 
 export interface DaemonStorageData {
   workspaces?: WorkspaceMetadata[];

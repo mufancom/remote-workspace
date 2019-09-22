@@ -8,7 +8,7 @@ import {
   RawGitHubServiceConfig,
   RawGitLabServiceConfig,
   RawGitServiceConfig,
-} from './config';
+} from '../config';
 
 const LIST_PULL_MERGE_REQUESTS_CACHE_TIMEOUT = 60 * 1000;
 
