@@ -6,10 +6,6 @@ import {AbstractConfig} from '../../../../bld/node-shared';
 import {RawConfig} from './raw-config';
 
 export class Config extends AbstractConfig<RawConfig> {
-  constructor(path: string) {
-    super(path);
-  }
-
   get remoteURL(): string {
     let {
       remote: {host, url},

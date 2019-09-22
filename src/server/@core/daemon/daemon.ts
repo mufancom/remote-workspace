@@ -16,22 +16,20 @@ import {
 } from '../../../../bld/shared';
 import {parseGitURL} from '../../@utils';
 import {Config} from '../config';
-import {AuthorizedKeysFile, DockerComposeFile} from '../generated-file';
 import {Workspace} from '../workspace';
 
 import {
   generateCreatePullMergeRequestInfo,
   listPullMergeRequests,
 } from './@git-services';
+import {WorkspaceFiles} from './@workspace-files';
 
 export interface DaemonStorageData {
   workspaces?: WorkspaceMetadata[];
 }
 
 export class Daemon {
-  readonly authorizedKeysFile = new AuthorizedKeysFile(this.config);
-
-  readonly dockerComposeFile = new DockerComposeFile(this.config);
+  readonly workspaceFiles = new WorkspaceFiles(this.config);
 
   private dockerComposeUpPromise = Promise.resolve();
 
@@ -39,10 +37,7 @@ export class Daemon {
     private config: Config,
     private storage: BoringCache<DaemonStorageData>,
   ) {
-    this.authorizedKeysFile
-      .update()
-      .then(() => this.dockerComposeUpdate())
-      .catch(console.error);
+    this.update().catch(console.error);
   }
 
   private get workspaces(): Workspace[] {
@@ -60,7 +55,7 @@ export class Daemon {
         return {
           ...metadata,
           ready: await FSE.stat(
-            Path.join('workspaces', metadata.id, '.ready'),
+            Path.join(this.config.dir, 'workspaces', metadata.id, '.ready'),
           ).then(() => true, () => false),
         };
       },
@@ -178,7 +173,7 @@ export class Daemon {
       ...options,
     });
 
-    await this.dockerComposeUpdate();
+    await this.update();
 
     return id;
   }
@@ -186,7 +181,7 @@ export class Daemon {
   async deleteWorkspace(id: string): Promise<void> {
     this.storage.pull('workspaces', metadata => metadata.id === id);
 
-    await this.dockerComposeUpdate();
+    await this.update();
   }
 
   async retrieveWorkspaceLog(id: string): Promise<string> {
@@ -214,38 +209,34 @@ export class Daemon {
       .join('\n');
   }
 
-  private async dockerComposeUpdate(): Promise<void> {
+  private async update(): Promise<void> {
     let workspaces = this.workspaces;
 
     return (this.dockerComposeUpPromise = this.dockerComposeUpPromise
       .then(async () => {
-        console.info('Updating docker...');
+        console.info('Updating workspace files...');
 
-        await this.dockerComposeFile.update(workspaces);
+        await this.workspaceFiles.update(workspaces);
 
         await this.dockerComposeUp();
 
-        await this.dockerComposeFile.prune(workspaces);
+        await this.workspaceFiles.prune(workspaces);
 
-        console.info('Docker updated...');
+        console.info('Done.');
       })
       .catch(console.error));
   }
 
   private async dockerComposeUp(): Promise<void> {
+    let config = this.config;
+
     console.info('Updating containers...');
 
     let composeProcess = ChildProcess.spawn(
       'docker-compose',
-      [
-        '--project-name',
-        this.config.name,
-        'up',
-        '--detach',
-        '--remove-orphans',
-      ],
+      ['--project-name', config.name, 'up', '--detach', '--remove-orphans'],
       {
-        cwd: this.dockerComposeFile.dir,
+        cwd: config.dir,
       },
     );
 

@@ -6,13 +6,9 @@ import YAML from 'js-yaml';
 import _ from 'lodash';
 import * as v from 'villa';
 
-import {GeneralDockerVolumeEntry} from '../../config';
-import {Workspace} from '../../workspace';
-import {AbstractGeneratedFile} from '../generated-file';
-
-import {writeTextFileToVolume} from './@utils';
-
-const WORKSPACES_PATH = './workspaces';
+import {writeTextFileToVolume} from '../../@utils';
+import {Config, GeneralDockerVolumeEntry} from '../config';
+import {Workspace} from '../workspace';
 
 function NETWORK_NAME(workspace: Workspace): string {
   return `${workspace.id}-network`;
@@ -20,54 +16,72 @@ function NETWORK_NAME(workspace: Workspace): string {
 
 // workspace
 
-function WORKSPACE_SOURCE_PATH(workspace: Workspace): string {
-  return `../workspaces/${workspace.id}`;
+function WORKSPACE_SOURCE_PATH(config: Config, workspace: Workspace): string {
+  return Path.join(config.dir, 'workspaces', workspace.id);
 }
 
 // workspace metadata
 
-function WORKSPACE_METADATA_SOURCE_PATH(workspace: Workspace): string {
-  return `${WORKSPACE_SOURCE_PATH(workspace)}/metadata.json`;
+function WORKSPACE_METADATA_SOURCE_PATH(
+  config: Config,
+  workspace: Workspace,
+): string {
+  return Path.join(WORKSPACE_SOURCE_PATH(config, workspace), 'metadata.json');
 }
 
 // repositories
 
-export class DockerComposeFile extends AbstractGeneratedFile {
+export class WorkspaceFiles {
+  constructor(readonly config: Config) {}
+
   async update(workspaces: Workspace[]): Promise<void> {
-    console.info('Updating initialize identity...');
+    let config = this.config;
+
+    console.info('Updating aurhorized keys...');
 
     await writeTextFileToVolume(
       this.config.name,
       'user-ssh',
+      'authorized_keys',
+      await this.buildAuthorizedKeys(),
+    );
+
+    console.info('Updating initialize identity...');
+
+    await writeTextFileToVolume(
+      config.name,
+      'user-ssh',
       'initialize-identity',
-      this.config.identity,
+      config.identity,
       '600',
     );
 
     console.info('Updating workspace metadata...');
 
     for (let workspace of workspaces) {
-      await this.outputFile(
-        WORKSPACE_METADATA_SOURCE_PATH(workspace),
+      await FSE.outputFile(
+        WORKSPACE_METADATA_SOURCE_PATH(config, workspace),
         JSON.stringify(workspace.raw, undefined, 2),
       );
     }
 
     console.info('Updating docker-compose.yml...');
 
-    await this.outputFile(
-      'docker-compose.yml',
+    await FSE.outputFile(
+      Path.join(config.dir, 'docker-compose.yml'),
       this.buildDockerComposeYAML(workspaces),
     );
   }
 
   async prune(workspaces: Workspace[]): Promise<void> {
+    let workspacesPath = Path.join(this.config.dir, 'workspaces');
+
     let workspaceIdSet = new Set(workspaces.map(workspace => workspace.id));
 
     let ids: string[];
 
     try {
-      ids = await FSE.readdir(WORKSPACES_PATH);
+      ids = await FSE.readdir(workspacesPath);
     } catch {
       ids = [];
     }
@@ -76,7 +90,7 @@ export class DockerComposeFile extends AbstractGeneratedFile {
 
     for (let id of outdatedIds) {
       console.info(`Removing outdated workspace "${id}"...`);
-      await FSE.remove(Path.join(WORKSPACES_PATH, id));
+      await FSE.remove(Path.join(workspacesPath, id));
     }
 
     console.info('Pruning docker containers...');
@@ -137,7 +151,7 @@ export class DockerComposeFile extends AbstractGeneratedFile {
                 volumes: [
                   {
                     type: 'bind',
-                    source: WORKSPACE_SOURCE_PATH(workspace),
+                    source: WORKSPACE_SOURCE_PATH(config, workspace),
                     target: '/root/workspace',
                   },
                   ...sharedVolumes,
@@ -179,6 +193,44 @@ export class DockerComposeFile extends AbstractGeneratedFile {
     return [
       '# Generated file, changes directly made to this file will be overridden.',
       YAML.dump(document),
+    ].join('\n');
+  }
+
+  private async buildAuthorizedKeys(): Promise<string> {
+    let config = this.config;
+
+    let lines = await v.map(
+      config.users,
+      async ({name, email, publicKey, publicKeyFile}) => {
+        if (publicKeyFile) {
+          publicKey = await FSE.readFile(
+            Path.join(config.dir, publicKeyFile),
+            'utf8',
+          );
+        }
+
+        if (!publicKey) {
+          throw new Error(`Missing public key for user "${name}".`);
+        }
+
+        let line = [
+          [
+            `environment="REMOTE_USER_NAME=${name}"`,
+            `environment="GIT_AUTHOR_NAME=${name}"`,
+            `environment="GIT_AUTHOR_EMAIL=${email}"`,
+            `environment="GIT_COMMITTER_NAME=${name}"`,
+            `environment="GIT_COMMITTER_EMAIL=${email}"`,
+          ].join(','),
+          publicKey.trim(),
+        ].join(' ');
+
+        return `${line}\n`;
+      },
+    );
+
+    return [
+      '# Generated file, changes directly made to this file will be overridden.',
+      lines.join(''),
     ].join('\n');
   }
 }

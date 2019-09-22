@@ -1,4 +1,5 @@
-// Check out source code for complete configuration.
+// Configuration "reference":
+// https://github.com/makeflow/remote-workspace/blob/master/src/client-host/%40core/config/raw-config.ts
 {
   "remote": {
     "host": "remote-workspace.example.com"

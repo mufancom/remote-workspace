@@ -16,6 +16,8 @@ const {projects} = require('/root/workspace/metadata.json');
 main(async () => {
   // prepare projects
 
+  console.info('Checking project hosts...');
+
   let hostSet = new Set(
     projects
       .map(project => (project.git.url.match(/@(.+?):/) || [])[1])
@@ -70,14 +72,13 @@ main(async () => {
       continue;
     }
 
-    console.info(`Initializing project "${name}"...`);
+    console.info(`Initializing project "${name}" from "${url}"...`);
 
     if (!(await exists(repositoryPath, 'directory'))) {
       console.info(`Cloning bare repository...`);
 
       await spawn('git', ['clone', '--bare', url, repositoryPath], {
         env: gitCloneEnv,
-        cwd: workspacePath,
       });
     }
 

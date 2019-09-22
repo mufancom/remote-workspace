@@ -1,39 +1,10 @@
 import {OmitValueOfKey} from 'tslang';
 
-export interface RawWorkspaceProjectGit {
-  url: string;
-  branch?: string;
-  newBranch?: string;
-}
-
-export interface RawWorkspaceProjectScripts {
-  initialize?: string;
-}
-
-export interface RawWorkspaceProjectSSH {
-  configs?: string[];
-}
-
-export interface RawWorkspaceProject {
-  name: string;
-  git: RawWorkspaceProjectGit;
-  scripts?: RawWorkspaceProjectScripts;
-  ssh?: RawWorkspaceProjectSSH;
-}
-
-export interface RawWorkspaceService {
-  name: string;
-  image: string;
-}
-
-export interface RawWorkspace {
-  id: string;
-  displayName: string;
-  owner?: string;
-  image?: string;
-  projects: RawWorkspaceProject[];
-  services?: RawWorkspaceService[];
-}
+import {
+  RawWorkspace,
+  RawWorkspaceProject,
+  RawWorkspaceProjectGit,
+} from './raw-workspace';
 
 export interface WorkspaceMetadata extends RawWorkspace {
   port: number;

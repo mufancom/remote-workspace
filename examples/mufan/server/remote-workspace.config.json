@@ -1,22 +1,31 @@
-// Check out source code for complete configuration.
+// Configuration "reference":
+// https://github.com/makeflow/remote-workspace/blob/master/src/server/%40core/config/raw-config.ts
 {
-  // Identity file used for Git clone during workspace initialization.
-  "identityFile": "remote-workspace-id_rsa",
   "users": [
     {
-      // User name and email will be added to the environment variable for Git
-      // during SSH session.
       "name": "vilicvane",
       "email": "foo@bar.pia",
-      // Public key for user to connect remote workspaces using SSH.
       "publicKeyFile": "users/vilicvane/id_rsa.pub"
     }
   ],
-  // You can use your customized workspace image based on
-  // `makeflow/remote-workspace` (which is based `buildpack-deps:bionic`).
-  // If you want to use another image, please checkout the Dockerfile of
-  // `makeflow/remote-workspace` and make sure you have added equivelent
-  // stuffs.
+  "git": {
+    "identityFile": "remote-workspace-id_rsa",
+    "services": [
+      {
+        "type": "github",
+        "credentials": {
+          "accessToken": "[access token]"
+        }
+      },
+      {
+        "type": "gitlab",
+        "host": "gitlab.com",
+        "credentials": {
+          "accessToken": "[access token]"
+        }
+      }
+    ]
+  },
   "image": "makeflow/remote-workspace-node:latest",
   "volumes": {
     "shared": [
@@ -52,12 +61,6 @@
         "displayName": "${branch}",
         "projects": ["makeflow-web"],
         "services": ["mongo", "redis", "zookeeper"]
-      },
-      {
-        "name": "syncable",
-        "params": ["branch"],
-        "displayName": "${branch}",
-        "projects": ["syncable"]
       }
     ],
     "projects": [
@@ -65,7 +68,7 @@
         "name": "makeflow-web",
         "params": ["branch"],
         "git": {
-          // Currently only SSH is supported.
+          // Currently only SSH URL is supported.
           "url": "git@gitlab.com:makeflow/makeflow-web.git",
           "branch": "master",
           "newBranch": "${branch}"
@@ -77,6 +80,7 @@
           ]
         },
         "scripts": {
+          // Initialize the project, copy configuration file and create samples.
           "initialize": "yarn && mkdir -p .config && cp /root/configs/makeflow-web-server.js .config/server.js && yarn build-server-program && yarn workspace server create-samples"
         }
       },
@@ -131,14 +135,5 @@
         "image": "zookeeper"
       }
     ]
-  },
-  "gitServices": [
-    {
-      "type": "gitlab",
-      "host": "gitlab.com",
-      "credentials": {
-        "accessToken": "[access token]"
-      }
-    }
-  ]
+  }
 }

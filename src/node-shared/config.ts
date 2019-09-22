@@ -1,13 +1,23 @@
 import {EventEmitter} from 'events';
 import * as FS from 'fs';
+import * as Path from 'path';
 
 import stripJSONComments from 'strip-json-comments';
 
 class Config<TRaw> extends EventEmitter {
+  readonly path: string;
+  readonly dir: string;
+
   protected raw!: TRaw;
 
-  constructor(readonly path: string) {
+  constructor(path: string) {
     super();
+
+    path = Path.resolve(path);
+
+    this.path = path;
+
+    this.dir = Path.dirname(path);
 
     this.load();
   }

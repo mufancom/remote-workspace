@@ -12,14 +12,6 @@ import {
 } from './raw-config';
 
 export class Config extends AbstractConfig<RawConfig> {
-  readonly dir: string;
-
-  constructor(path: string) {
-    super(path);
-
-    this.dir = Path.dirname(path);
-  }
-
   get name(): string {
     let {name = 'remote-workspace'} = this.raw;
     return name;
@@ -35,16 +27,12 @@ export class Config extends AbstractConfig<RawConfig> {
     return port;
   }
 
-  get dataDir(): string {
-    let {dataDir = '.'} = this.raw;
-    return Path.resolve(this.dir, dataDir);
-  }
-
   get identity(): string {
-    let {identityFile} = this.raw;
-    let path = Path.join(this.dir, identityFile);
+    let {
+      git: {identityFile},
+    } = this.raw;
 
-    return FS.readFileSync(path, 'utf-8');
+    return FS.readFileSync(Path.join(this.dir, identityFile), 'utf-8');
   }
 
   get users(): RawUserConfig[] {
@@ -67,8 +55,9 @@ export class Config extends AbstractConfig<RawConfig> {
   }
 
   get gitHostToServiceConfigMap(): Map<string, RawGitServiceConfig> {
-    let {git = {}} = this.raw;
-    let {services = []} = git;
+    let {
+      git: {services = []},
+    } = this.raw;
 
     if (!services.some(service => service.type === 'github')) {
       services.push({
