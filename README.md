@@ -5,7 +5,7 @@
 
 The `remote-workspace` package provides a simple solution for managing remote workspace containers based on features to be developed. It leverages the Visual Studio Code [Remote Development](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) pack, more specifically [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh), hoping to deliver better development experience for rapid and sparse feature development.
 
-![Screenshot](https://user-images.githubusercontent.com/970430/65377230-eafe6580-dcdb-11e9-8d1e-892c9970dc3c.png)
+![Screenshot](https://user-images.githubusercontent.com/970430/65389688-708d1e80-dd8b-11e9-8878-72db64cc538c.png)
 
 ## The reason behind
 
