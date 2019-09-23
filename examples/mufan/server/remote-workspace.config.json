@@ -32,7 +32,7 @@
       // Provide shared configuration for initialization.
       {
         "type": "bind",
-        "source": "../configs",
+        "source": "./configs",
         "target": "/root/configs"
       },
       // Yarn caches.
