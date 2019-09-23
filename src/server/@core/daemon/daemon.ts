@@ -97,7 +97,7 @@ export class Daemon {
 
           let urlInfo = parseGitURL(url);
 
-          if (!urlInfo) {
+          if (!urlInfo || targetBranch === sourceBranch) {
             return project;
           }
 
