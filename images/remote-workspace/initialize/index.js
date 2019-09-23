@@ -99,7 +99,7 @@ main(async () => {
 
     console.info(`Checking out branch "${newBranch}" from "${branch}"...`);
 
-    await spawn('git', ['checkout', '-B', newBranch, branch], {
+    await spawn('git', ['checkout', '-B', newBranch, `origin/${branch}`], {
       cwd: projectPath,
     });
 
