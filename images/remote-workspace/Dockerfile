@@ -22,6 +22,9 @@ RUN /remote-workspace/node/bin/node\
 
 WORKDIR /root
 
+RUN git config --global user.name "placeholder" &&\
+  git config --global user.email "placeholder@remote.workspace"
+
 RUN mkdir /run/sshd &&\
   echo "PermitUserEnvironment yes\nAllowAgentForwarding yes" >> /etc/ssh/sshd_config
 
