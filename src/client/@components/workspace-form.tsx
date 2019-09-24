@@ -17,15 +17,13 @@ import {
 } from '../../../bld/shared';
 
 export interface WorkspaceFormProps {
+  templates: RawTemplatesConfig;
   workspace: WorkspaceMetadata | undefined;
   onSubmitSuccess(): void;
 }
 
 @observer
 export class WorkspaceForm extends Component<WorkspaceFormProps> {
-  @observable
-  private templates: RawTemplatesConfig = {};
-
   @observable
   private selectedWorkspaceName = 'default';
 
@@ -34,9 +32,6 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
   @observable
   private _selectedServiceNames: string[] = [];
-
-  @observable
-  private _paramDictWorkspaceId: string | undefined;
 
   @observable
   private _paramDict: Dict<string | undefined> | undefined;
@@ -62,15 +57,7 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
   private get paramDict(): Dict<string | undefined> {
     let {workspace} = this.props;
 
-    let paramDict = this._paramDict;
-
-    if (workspace) {
-      if (this._paramDictWorkspaceId !== workspace.id) {
-        paramDict = workspace.params;
-      }
-    }
-
-    return paramDict || {};
+    return this._paramDict || (workspace && workspace.params) || {};
   }
 
   @computed
@@ -88,7 +75,10 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
   private get selectedWorkspaceTemplate():
     | RawTemplateWorkspaceConfig
     | undefined {
-    let {workspaces} = this.templates;
+    let {
+      templates: {workspaces},
+    } = this.props;
+
     let selectedWorkspaceName = this.selectedWorkspaceName;
 
     return workspaces && selectedWorkspaceName
@@ -98,7 +88,10 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
   @computed
   private get selectedProjectTemplates(): RawTemplateProjectConfig[] {
-    let {projects = []} = this.templates;
+    let {
+      templates: {projects = []},
+    } = this.props;
+
     let selectedProjectNameSet = new Set(this.selectedProjectNames);
 
     return projects.filter(project => selectedProjectNameSet.has(project.name));
@@ -111,8 +104,11 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
   @computed
   private get requiredProjectNames(): string[] {
+    let {
+      templates: {workspaces},
+    } = this.props;
+
     let workspaceName = this.selectedWorkspaceName;
-    let {workspaces} = this.templates;
 
     if (!workspaceName || !workspaces) {
       return [];
@@ -129,7 +125,10 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
   @computed
   private get selectedServiceTemplates(): RawTemplateServiceConfig[] {
-    let {services = []} = this.templates;
+    let {
+      templates: {services = []},
+    } = this.props;
+
     let selectedServiceNameSet = new Set(this.selectedServiceNames);
 
     return services.filter(service => selectedServiceNameSet.has(service.name));
@@ -142,8 +141,11 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
   @computed
   private get requiredServiceNames(): string[] {
+    let {
+      templates: {workspaces},
+    } = this.props;
+
     let workspaceName = this.selectedWorkspaceName;
-    let {workspaces} = this.templates;
 
     if (!workspaceName || !workspaces) {
       return [];
@@ -204,7 +206,9 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
   @computed
   private get workspaceTemplatesRendering(): ReactNode {
-    let {workspaces} = this.templates;
+    let {
+      templates: {workspaces},
+    } = this.props;
 
     if (!workspaces) {
       return undefined;
@@ -230,7 +234,9 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
   @computed
   private get projectTemplatesRendering(): ReactNode {
-    let {projects} = this.templates;
+    let {
+      templates: {projects},
+    } = this.props;
 
     if (!projects) {
       return undefined;
@@ -261,7 +267,9 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
   @computed
   private get serviceTemplatesRendering(): ReactNode {
-    let {services} = this.templates;
+    let {
+      templates: {services},
+    } = this.props;
 
     if (!services) {
       return undefined;
@@ -308,9 +316,7 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
         <Input
           value={paramDict[paramKey]}
           disabled={!!this._optionsJSON}
-          onChange={event => {
-            this.setParam(paramKey, event.target.value);
-          }}
+          onChange={event => this.setParam(paramKey, event.target.value)}
         />
       </Descriptions.Item>
     ));
@@ -358,10 +364,6 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
     );
   }
 
-  componentDidMount(): void {
-    this.load().catch(console.error);
-  }
-
   private onWorkspaceRadioChange = (event: RadioChangeEvent): void => {
     this.selectedWorkspaceName = event.target.value || false;
   };
@@ -389,19 +391,10 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
   };
 
   private setParam(key: string, value: string): void {
-    let {workspace} = this.props;
-
     this._paramDict = {
       ...this.paramDict,
       [key]: value,
     };
-
-    this._paramDictWorkspaceId = workspace && workspace.id;
-  }
-
-  private resetParams(): void {
-    this._paramDict = undefined;
-    this._paramDictWorkspaceId = undefined;
   }
 
   private async submit(json: string): Promise<void> {
@@ -455,22 +448,9 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
         message.success('Workspace created.');
 
         onSubmitSuccess();
-
-        this.resetParams();
       }
     } finally {
       this.processing = false;
-    }
-  }
-
-  private async load(): Promise<void> {
-    let response = await fetch('/api/templates');
-    let {data} = (await response.json()) as {
-      data?: RawTemplatesConfig;
-    };
-
-    if (data) {
-      this.templates = data;
     }
   }
 }
