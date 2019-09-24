@@ -99,9 +99,17 @@ main(async () => {
 
     console.info(`Checking out branch "${newBranch}" from "${branch}"...`);
 
-    await spawn('git', ['checkout', '-B', newBranch, `origin/${branch}`], {
-      cwd: projectPath,
-    });
+    await spawn(
+      'git',
+      [
+        'checkout',
+        '-B',
+        newBranch,
+        `origin/${branch}`,
+        newBranch !== branch ? '--no-track' : undefined,
+      ],
+      {cwd: projectPath},
+    );
 
     if (scripts.initialize) {
       console.info('Running initialization scripts...');
