@@ -3,32 +3,21 @@
 
 # Remote Workspace
 
-The `remote-workspace` package provides a simple solution for managing remote workspace containers based on features to be developed. It leverages the Visual Studio Code [Remote Development](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) pack, more specifically [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh), hoping to deliver better development experience for rapid and sparse feature development.
+The `remote-workspace` package leverages the Visual Studio Code [Remote Development](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) pack, more specifically [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh), to deliver smoother development experience with multiple setups in parallel.
 
-![Screenshot](https://user-images.githubusercontent.com/970430/65389688-708d1e80-dd8b-11e9-8878-72db64cc538c.png)
+![Screenshot](https://user-images.githubusercontent.com/970430/65522170-ef659100-df1c-11e9-9578-bf981fc44b95.png)
 
-## The reason behind
+## What it does?
 
-Doing code review on pull/merge requests diff pages is painful:
+- Deploys docker containers on your mark, typically one workspace container (and related service containers) per Git branch.
+- Manages local SSH configuration and launches Visual Studio Code for remote workspaces.
 
-- Not until recently that GitLab made it easier to expand all code between diffs for code review. If you want to understand the context of the changed code, you had to expand multiple times to see the code around, and it's still an issue for GitHub.
-- Even if you expanded the code around, you still need to function as human parser, type checker, and the runtime to make relevant/helpful code review. You can't just navigate around code, take advantages of types etc.
+## Why does this matter?
 
-So, we usually don't use those diff pages for code review. Instead we use the development environment by sitting on the chair of the code owner.
+Switching between branches of a relatively large project is painful and takes time, however:
 
-This helps provide better code review quality, however it is still kind of painful:
-
-- Switching between branches (during either development or code review) is not pleasant at all. And as we are trying to have smaller tasks (which means more branches), it gets even worse.
-- People won't be happy pulling and building the work-in-progress branches for code review.
-- I personally just don't want to switch for small parallel patches when I am working on a major refactoring.
-
-After got adapted to VSCode remote development, we popped up with this idea: what about one remote workspace per pull/merge request? We were stuck on the `ForwardAgent` limit of the remote development extension, but after that got resolved, we put this thing back to table.
-
-There are some important factors that lead us to this tool:
-
-- We want (relatively) high-quality code review for every single pull/merge request.
-- We want to make tasks smaller, and we are okay that the lifecycle of every single task gets longer as the result of repeated code review. But we want to keep the over-time effeciency by paralleling multiple tasks.
-- We want to take advantages of the remote computing power and save our laptops with less fan noises.
+- While your changes probably need some sort of feedback before get merged, it's likely that you would have to repeatedly switch between branches to make changes.
+- Doing code review on diff pages eliminates the abilities provided by development environment. For notable changes, if you don't want to act as human parser, type checker and runtime at the same time, you'll have to pull down the work-in-progress branches, or to sit by the side of your colleague. Either way you or your colleague have to switch between branches.
 
 ## How to use
 
@@ -55,7 +44,8 @@ The `remote-workspace` package provides two commands for server and client respe
 
 #### Prerequisites
 
-- VSCode with Remote Development extension. Some of the folder names are hard-coded, you may want to use the stable version of the extension to avoid folder name mismatching.
+- VSCode with Remote Development extension. Some of the related folder names are hard-coded, you may want to use the stable version of the extension to avoid folder name mismatching.
+- SSH agent running with a valid identity.
 - Node.js v10+ (we are using v12).
 
 #### Usage
@@ -64,23 +54,35 @@ The `remote-workspace` package provides two commands for server and client respe
 - Find or create a nice directory and create configuration file `remote-workspace.config.json`, you can find an example [here](./examples/mufan/client/).
 - Run `remote-workspace` in that nice directory to start the client host.
 
-## Adapted technical approaches
+## FAQ
 
-This package takes advantages of several techniques or tricks, and it would be nice to understand them to avoid related problems.
+- Is this tool Node.js specific?
 
-### Server
+  > No, but it is Git and VSCode specific.
 
-- It uses the `environment` option in `authorized_keys` for different users to commit changes to Git repository.
-- It uses a referenced bare repository to speed up project cloning. It first created a bare repository if missing, and then clone the project with `--reference` option to the bare repository. Please don't delete branches or tags that are not created within your current workspace. See [git-clone](https://git-scm.com/docs/git-clone#Documentation/git-clone.txt---reference-if-ableltrepositorygt) for more information.
-- It uses `docker-compose up`, does `docker-compose container prune --force` and `docker-compose network prune --force` on updates.
+- Who can connect the remote workspaces?
 
-### Client
+  > Currently any of the users you put into server-side configuration can connect to any of the remote workspaces.
 
-The client installation is required for the programmatically updating SSH configuration file (usually `.ssh/config`) and launching VSCode.
+- How do I access repositories from the remote workspace?
 
-- It updates the SSH configuration file to make VSCode able to read configurations like `Port`, `HostkeyAlias` etc.
-- Currently you still need to configure SSH port forwarding (check out the server example), we may introduce built-in port forwarding in the future.
-- It relies on agent forwarding to access remote repositories, so please make sure local SSH Agent is working.
+  > The tool initializes projects using `git.identityFile` in server-side configuration file; and uses forwarded SSH agent to pull/push when you are connected.
+
+- How does Git know who is the author if multiple developers make commits from the same remote workspace?
+
+  > The tool generates `authorized_keys` file with the `environment` option for different users, including `REMOTE_USER_NAME`, `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME` and `GIT_COMMITTER_EMAIL`.
+
+- How does it speed up cloning projects?
+
+  > It uses a referenced bare repository to speed up project cloning. It first creates a bare repository if not present, and then clones the project with `--reference` option. See [git-clone](https://git-scm.com/docs/git-clone#Documentation/git-clone.txt---reference-if-ableltrepositorygt) for more information.
+
+- Does it do any risky Docker operation that might have impact to other Docker resources it's not aware of?
+
+  > It currently uses `docker-compose up` to bring up containers under the configured project name (defaults to `remote-workspace`). And it does `docker-compose container prune --force` as well as `docker-compose network prune --force` on updates.
+
+- Why do I need to run a client on my local machine?
+
+  > The client manages your SSH configuration file, adds remote workspaces with proper `Host`, `Port`, `HostkeyAlias` and other configurations like project specific ones. It also spawns VSCode when you click project or workspace links.
 
 ## License
 
