@@ -1,4 +1,4 @@
-import {Checkbox, PageHeader} from 'antd';
+import {Alert, Checkbox, PageHeader} from 'antd';
 import {CheckboxChangeEvent} from 'antd/lib/checkbox';
 import {observable} from 'mobx';
 import {observer} from 'mobx-react';
@@ -59,6 +59,13 @@ export class App extends Component {
           }
         />
         <div className="section-content">
+          {editingWorkspace && (
+            <Alert
+              type="warning"
+              showIcon
+              message="Template options other than parameters have been reset in the form below, select them back as you need."
+            />
+          )}
           <WorkspaceForm
             key={this.formKey}
             templates={this.templates}

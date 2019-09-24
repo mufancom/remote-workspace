@@ -7,13 +7,9 @@
   padding: 0 30px;
 }
 
-.buttons-line {
-  margin-top: 10px;
-  text-align: right;
-}
-
-.buttons-line > button:not(:first-child) {
-  margin-left: 10px;
+.ant-page-header-heading-extra {
+  position: relative;
+  top: 8px;
 }
 
 .workspace-list-item-meta:not(.ready) {
@@ -37,7 +33,15 @@
   text-decoration: line-through;
 }
 
-.ant-page-header-heading-extra {
-  position: relative;
-  top: 8px;
+.ant-alert {
+  margin-bottom: 10px;
+}
+
+.buttons-line {
+  margin-top: 10px;
+  text-align: right;
+}
+
+.buttons-line > button:not(:first-child) {
+  margin-left: 10px;
 }
