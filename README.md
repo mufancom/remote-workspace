@@ -19,7 +19,7 @@ Switching between branches of a relatively large project is painful and takes ti
 - While your changes probably need some sort of feedback before get merged, it's likely that you would have to repeatedly switch between branches to make changes.
 - Doing code review on diff pages eliminates the abilities provided by development environment. For notable changes, if you don't want to act as human parser, type checker and runtime at the same time, you'll have to pull down the work-in-progress branches, or to sit by the side of your colleague. Either way you or your colleague have to switch between branches.
 
-## How to use
+## Getting started
 
 > Please understand there is little effort put into security concerns, use it within a trusted group of people and make sure it's not exposed to the internet.
 
