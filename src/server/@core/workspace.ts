@@ -1,3 +1,5 @@
+import {createHash} from 'crypto';
+
 import {
   RawWorkspace,
   RawWorkspaceProject,
@@ -12,6 +14,12 @@ export class Workspace {
     readonly port: number,
     private config: Config,
   ) {}
+
+  get hash(): string {
+    return createHash('md5')
+      .update(JSON.stringify(this.raw))
+      .digest('hex');
+  }
 
   get id(): string {
     let {id} = this.raw;

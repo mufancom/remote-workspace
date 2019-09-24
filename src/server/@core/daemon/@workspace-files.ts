@@ -147,6 +147,10 @@ export class WorkspaceFiles {
               workspace.id,
               {
                 image: workspace.image,
+                labels: {
+                  // Recreate workspace container on workspace options change.
+                  'remote-workspace.hash': workspace.hash,
+                },
                 restart: 'always',
                 volumes: [
                   {

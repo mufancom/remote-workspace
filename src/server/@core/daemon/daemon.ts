@@ -182,6 +182,14 @@ export class Daemon {
     return id;
   }
 
+  async updateWorkspace(workspace: WorkspaceMetadata): Promise<void> {
+    this.storage.pull('workspaces', ({id}) => id === workspace.id);
+
+    this.storage.push('workspaces', workspace);
+
+    await this.update();
+  }
+
   async deleteWorkspace(id: string): Promise<void> {
     this.storage.pull('workspaces', metadata => metadata.id === id);
 

@@ -13,10 +13,12 @@ import {
   RawTemplateServiceConfig,
   RawTemplateWorkspaceConfig,
   RawTemplatesConfig,
+  WorkspaceMetadata,
 } from '../../../bld/shared';
 
 export interface WorkspaceFormProps {
-  onCreate(): void;
+  workspace: WorkspaceMetadata | undefined;
+  onSubmitSuccess(): void;
 }
 
 @observer
@@ -34,13 +36,16 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
   private _selectedServiceNames: string[] = [];
 
   @observable
-  private paramDict: Dict<string | undefined> = {};
+  private _paramDictWorkspaceId: string | undefined;
+
+  @observable
+  private _paramDict: Dict<string | undefined> | undefined;
 
   @observable
   private _optionsJSON: string | undefined;
 
   @observable
-  private creating = false;
+  private processing = false;
 
   @computed
   private get paramKeys(): string[] {
@@ -50,6 +55,32 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
         ...this.selectedProjectTemplates,
         ...this.selectedServiceTemplates,
       ].map(template => template && template.params),
+    );
+  }
+
+  @computed
+  private get paramDict(): Dict<string | undefined> {
+    let {workspace} = this.props;
+
+    let paramDict = this._paramDict;
+
+    if (workspace) {
+      if (this._paramDictWorkspaceId !== workspace.id) {
+        paramDict = workspace.params;
+      }
+    }
+
+    return paramDict || {};
+  }
+
+  @computed
+  private get prunedParamDict(): Dict<string> {
+    let paramDict = this.paramDict;
+
+    return _.fromPairs(
+      this.paramKeys
+        .map(key => [key, paramDict[key]])
+        .filter((entry): entry is [string, string] => !!entry[1]),
     );
   }
 
@@ -133,11 +164,7 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
       return false;
     }
 
-    let presentParamKeySet = new Set(
-      Object.entries(this.paramDict)
-        .filter(([, value]) => !!value)
-        .map(([key]) => key),
-    );
+    let presentParamKeySet = new Set(Object.keys(this.prunedParamDict));
 
     return this.paramKeys.some(key => !presentParamKeySet.has(key));
   }
@@ -273,16 +300,16 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
     let paramDict = this.paramDict;
 
-    return paramKeys.map(param => (
+    return paramKeys.map(paramKey => (
       <Descriptions.Item
-        key={`param:${param}`}
-        label={`Parameter \${${param}}`}
+        key={`param:${paramKey}`}
+        label={`Parameter \${${paramKey}}`}
       >
         <Input
-          value={paramDict[param]}
+          value={paramDict[paramKey]}
           disabled={!!this._optionsJSON}
           onChange={event => {
-            paramDict[param] = event.target.value;
+            this.setParam(paramKey, event.target.value);
           }}
         />
       </Descriptions.Item>
@@ -291,6 +318,8 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
   @computed
   private get optionsJSONRendering(): ReactNode {
+    let {workspace} = this.props;
+
     return (
       <Descriptions.Item label="Options">
         <Input.TextArea
@@ -307,10 +336,10 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
           <Button
             type="primary"
             disabled={this.missingParams}
-            loading={this.creating}
-            onClick={this.onCreateButtonClick}
+            loading={this.processing}
+            onClick={this.onSubmitButtonClick}
           >
-            Create
+            {workspace ? 'Update' : 'Create'}
           </Button>
         </div>
       </Descriptions.Item>
@@ -355,16 +384,63 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
     this._optionsJSON = undefined;
   };
 
-  private onCreateButtonClick = (): void => {
-    this.create(this.optionsJSON).catch(console.error);
+  private onSubmitButtonClick = (): void => {
+    this.submit(this.optionsJSON).catch(console.error);
   };
 
-  private async create(json: string): Promise<void> {
-    this.creating = true;
+  private setParam(key: string, value: string): void {
+    let {workspace} = this.props;
+
+    this._paramDict = {
+      ...this.paramDict,
+      [key]: value,
+    };
+
+    this._paramDictWorkspaceId = workspace && workspace.id;
+  }
+
+  private resetParams(): void {
+    this._paramDict = undefined;
+    this._paramDictWorkspaceId = undefined;
+  }
+
+  private async submit(json: string): Promise<void> {
+    let {workspace, onSubmitSuccess} = this.props;
+
+    let data = JSON.parse(json);
+
+    let paramDict = this.prunedParamDict;
+
+    let url: string;
+    let method: string;
+
+    if (workspace) {
+      let {id, port} = workspace;
+
+      url = `/api/workspaces/${id}`;
+      method = 'PUT';
+
+      json = JSON.stringify({
+        id,
+        ...data,
+        params: paramDict,
+        port,
+      });
+    } else {
+      url = '/api/workspaces';
+      method = 'POST';
+
+      json = JSON.stringify({
+        ...data,
+        params: paramDict,
+      });
+    }
+
+    this.processing = true;
 
     try {
-      let response = await fetch('/api/workspaces', {
-        method: 'POST',
+      let response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -378,12 +454,12 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
       } else {
         message.success('Workspace created.');
 
-        let {onCreate} = this.props;
+        onSubmitSuccess();
 
-        onCreate();
+        this.resetParams();
       }
     } finally {
-      this.creating = false;
+      this.processing = false;
     }
   }
 

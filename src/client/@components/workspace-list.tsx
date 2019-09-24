@@ -7,6 +7,7 @@ import {observer} from 'mobx-react';
 import React, {Component, Fragment, ReactNode} from 'react';
 
 import {
+  WorkspaceMetadata,
   WorkspaceProjectWithPullMergeRequestInfo,
   WorkspaceStatus,
   WorkspaceStatusWithPullMergeRequestInfo,
@@ -15,7 +16,9 @@ import {
 const REFRESH_INTERVAL_DEFAULT = 10000;
 
 export interface WorkspaceListProps {
+  editingWorkspace: WorkspaceMetadata | undefined;
   all: boolean;
+  onEditClick(workspace: WorkspaceMetadata): void;
 }
 
 @observer
@@ -88,7 +91,11 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
   }
 
   private renderActions(workspace: WorkspaceStatus): ReactNode[] {
-    let onLaunchClick = (): void => {
+    let {editingWorkspace} = this.props;
+
+    let editingWorkspaceId = editingWorkspace && editingWorkspace.id;
+
+    let onWorkspaceClick = (): void => {
       this.launch(workspace).catch(console.error);
     };
 
@@ -96,13 +103,23 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
       this.log(workspace.id).catch(console.error);
     };
 
+    let onEditClick = (): void => {
+      let {onEditClick} = this.props;
+      onEditClick(workspace);
+    };
+
     let onDeleteConfirm = (): void => {
       this.delete(workspace.id).catch(console.error);
     };
 
     return _.compact([
-      workspace.ready && <a onClick={onLaunchClick}>launch</a>,
+      workspace.ready && <a onClick={onWorkspaceClick}>workspace</a>,
       <a onClick={onLogClick}>log</a>,
+      workspace.id === editingWorkspaceId ? (
+        <span>edit</span>
+      ) : (
+        <a onClick={onEditClick}>edit</a>
+      ),
       <Popconfirm
         placement="bottom"
         title="Are you sure you want to delete this workspace?"

@@ -8,8 +8,13 @@ import {Server} from '@hapi/hapi';
 import Inert from '@hapi/inert';
 import {BoringCache} from 'boring-cache';
 import {main} from 'main-function';
+import {OmitValueOfKey} from 'tslang';
 
-import {CreateWorkspaceOptions, NEVER} from '../../bld/shared';
+import {
+  CreateWorkspaceOptions,
+  NEVER,
+  WorkspaceMetadata,
+} from '../../bld/shared';
 
 import {Config, Daemon, DaemonStorageData} from './@core';
 
@@ -88,6 +93,19 @@ main(async () => {
           id,
         },
       };
+    },
+  });
+
+  apiServer.route({
+    method: 'PUT',
+    path: '/api/workspaces/{id}',
+    async handler({params: {id}, payload}) {
+      await daemon.updateWorkspace({
+        id,
+        ...(payload as OmitValueOfKey<WorkspaceMetadata, 'id'>),
+      });
+
+      return {};
     },
   });
 
