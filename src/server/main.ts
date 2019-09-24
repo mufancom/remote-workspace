@@ -13,6 +13,8 @@ import {CreateWorkspaceOptions, NEVER} from '../../bld/shared';
 
 import {Config, Daemon, DaemonStorageData} from './@core';
 
+const LOG_AUTO_REFRESH_LENGTH_LIMIT = 10000;
+
 const config = new Config('remote-workspace.config.json');
 
 const storage = new BoringCache<DaemonStorageData>('.remote-workspace.json');
@@ -37,12 +39,14 @@ main(async () => {
     path: '/workspaces/{id}/log',
     async handler({params: {id}}, toolkit) {
       try {
+        let ready = await daemon.isWorkspaceReady(id);
         let log = await daemon.retrieveWorkspaceLog(id);
 
-        let refreshHTML =
-          log.length > 10000
-            ? '<div>Log too long, auto refresh disabled.</div>'
-            : '<meta http-equiv="refresh" content="10" />';
+        let refreshHTML = ready
+          ? ''
+          : log.length < LOG_AUTO_REFRESH_LENGTH_LIMIT
+          ? '<meta http-equiv="refresh" content="10" />'
+          : '<div>Log too long, auto refresh disabled.</div>';
 
         return `${refreshHTML}<pre>${log
           .replace(/</g, '&lt;')

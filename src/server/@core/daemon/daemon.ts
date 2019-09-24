@@ -46,6 +46,12 @@ export class Daemon {
       .map(({port, ...raw}) => new Workspace(raw, port, this.config));
   }
 
+  async isWorkspaceReady(id: string): Promise<boolean> {
+    return FSE.stat(
+      Path.join(this.config.dir, 'workspaces', id, '.ready'),
+    ).then(() => true, () => false);
+  }
+
   async getWorkspaceStatuses(): Promise<WorkspaceStatus[]> {
     let gitHostToServiceConfigMap = this.config.gitHostToServiceConfigMap;
 
@@ -54,9 +60,7 @@ export class Daemon {
       async (metadata): Promise<WorkspaceStatus> => {
         return {
           ...metadata,
-          ready: await FSE.stat(
-            Path.join(this.config.dir, 'workspaces', metadata.id, '.ready'),
-          ).then(() => true, () => false),
+          ready: await this.isWorkspaceReady(metadata.id),
         };
       },
     );
