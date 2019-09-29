@@ -6,12 +6,12 @@ RUN apt-get install --assume-yes openssh-server
 
 WORKDIR /remote-workspace
 
-ENV NODE_VERSION 12.10.0
+ENV NODE_VERSION 12.11.0
 
-RUN wget https://nodejs.org/dist/v12.10.0/node-v12.10.0-linux-x64.tar.xz &&\
-  tar -xf node-v12.10.0-linux-x64.tar.xz &&\
-  mv node-v12.10.0-linux-x64 node &&\
-  rm node-v12.10.0-linux-x64.tar.xz
+RUN wget https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz &&\
+  tar -xf node-v$NODE_VERSION-linux-x64.tar.xz &&\
+  mv node-v$NODE_VERSION-linux-x64 node &&\
+  rm node-v$NODE_VERSION-linux-x64.tar.xz
 
 COPY initialize initialize
 
