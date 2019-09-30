@@ -1,4 +1,4 @@
-import {Checkbox, PageHeader} from 'antd';
+import {Alert, Checkbox, PageHeader} from 'antd';
 import {CheckboxChangeEvent} from 'antd/lib/checkbox';
 import {observable} from 'mobx';
 import {observer} from 'mobx-react';
@@ -24,11 +24,31 @@ export class App extends Component {
   @observable
   private formKey = 0;
 
+  @observable
+  private clientHostVersion: string | undefined;
+
+  @observable
+  private serverVersion: string | undefined;
+
   render(): ReactNode {
     let editingWorkspace = this.editingWorkspace;
 
+    let clientHostVersion = this.clientHostVersion;
+    let serverVersion = this.serverVersion;
+
+    let versionMismatch =
+      !!serverVersion && clientHostVersion !== serverVersion;
+
     return (
       <div>
+        {versionMismatch && (
+          <Alert
+            type="warning"
+            showIcon
+            message={`The version of your client host (${clientHostVersion ||
+              'unknown'}) does not match the server (${serverVersion}).`}
+          ></Alert>
+        )}
         <PageHeader
           title="Workspaces"
           extra={
@@ -72,6 +92,7 @@ export class App extends Component {
 
   componentDidMount(): void {
     this.loadTemplates().catch(console.error);
+    this.checkVersion().catch(console.error);
   }
 
   private onWorkspaceListEditClick = (workspace: WorkspaceMetadata): void => {
@@ -105,5 +126,25 @@ export class App extends Component {
     if (data) {
       this.templates = data;
     }
+  }
+
+  private async checkVersion(): Promise<void> {
+    let clientHostResponse = await fetch('/api/client-host-version');
+
+    if (clientHostResponse.status === 200) {
+      let {data: clientHostVersion} = (await clientHostResponse.json()) as {
+        data?: string;
+      };
+
+      this.clientHostVersion = clientHostVersion;
+    }
+
+    let serverResponse = await fetch('/api/server-version');
+
+    let {data: serverVersion} = (await serverResponse.json()) as {
+      data?: string;
+    };
+
+    this.serverVersion = serverVersion;
   }
 }

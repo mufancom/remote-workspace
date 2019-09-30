@@ -16,6 +16,9 @@ import {NEVER, WorkspaceStatus} from '../../bld/shared';
 
 import {Config, SSHConfig, SSH_CONFIG_HOST, VSCodeStorage} from './@core';
 
+// tslint:disable-next-line: no-var-requires no-require-imports
+const {version} = require('../../package.json') as {version: string};
+
 const config = new Config('remote-workspace.config.json');
 
 const sshConfig = new SSHConfig({
@@ -31,6 +34,16 @@ main(async () => {
   });
 
   await apiServer.register(H2O2);
+
+  apiServer.route({
+    method: 'GET',
+    path: '/api/client-host-version',
+    handler() {
+      return {
+        data: version,
+      };
+    },
+  });
 
   apiServer.route({
     method: 'POST',

@@ -18,6 +18,9 @@ import {
 
 import {Config, Daemon, DaemonStorageData} from './@core';
 
+// tslint:disable-next-line: no-var-requires no-require-imports
+const {version} = require('../../package.json') as {version: string};
+
 const LOG_AUTO_REFRESH_LENGTH_LIMIT = 10000;
 
 const config = new Config('remote-workspace.config.json');
@@ -38,6 +41,16 @@ main(async () => {
   });
 
   await apiServer.register(Inert);
+
+  apiServer.route({
+    method: 'GET',
+    path: '/api/server-version',
+    handler() {
+      return {
+        data: version,
+      };
+    },
+  });
 
   apiServer.route({
     method: 'GET',
