@@ -48,7 +48,7 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
     let {workspace: workspace} = props;
 
     if (workspace) {
-      let {params, port, ...options} = workspace;
+      let {id, params, port, ...options} = workspace;
 
       this._optionsJSON = JSON.stringify(options, undefined, 2);
     }
