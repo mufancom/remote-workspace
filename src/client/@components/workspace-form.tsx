@@ -5,7 +5,7 @@ import _ from 'lodash';
 import {computed, observable} from 'mobx';
 import {observer} from 'mobx-react';
 import React, {ChangeEvent, Component, ReactNode} from 'react';
-import {Dict} from 'tslang';
+import {Dict, OmitValueOfKey} from 'tslang';
 
 import {
   CreateWorkspaceOptions,
@@ -13,6 +13,7 @@ import {
   RawTemplateServiceConfig,
   RawTemplateWorkspaceConfig,
   RawTemplatesConfig,
+  RawWorkspace,
   WorkspaceMetadata,
 } from '../../../bld/shared';
 
@@ -45,10 +46,18 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
   constructor(props: WorkspaceFormProps) {
     super(props);
 
-    let {workspace: workspace} = props;
+    let {workspace} = props;
 
     if (workspace) {
-      let {id, params, port, ...options} = workspace;
+      let {displayName, owner, image, projects, services} = workspace;
+
+      let options: OmitValueOfKey<RawWorkspace, 'id' | 'params'> = {
+        displayName,
+        owner,
+        image,
+        projects,
+        services,
+      };
 
       this._optionsJSON = JSON.stringify(options, undefined, 2);
     }
