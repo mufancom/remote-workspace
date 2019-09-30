@@ -6,23 +6,24 @@ import 'villa/platform/node';
 
 import H2O2 from '@hapi/h2o2';
 import {Server} from '@hapi/hapi';
-import * as FSE from 'fs-extra';
-import hypenate from 'hyphenate';
+import findProcess from 'find-process';
 import _ from 'lodash';
 import {main} from 'main-function';
 import fetch from 'node-fetch';
 import open from 'open';
 
-import {NEVER, WorkspaceMetadata, WorkspaceStatus} from '../../bld/shared';
+import {NEVER, WorkspaceStatus} from '../../bld/shared';
 
-import {Config} from './@core';
-
-function SSH_CONFIG_HOST({displayName, port}: WorkspaceMetadata): string {
-  return `${hypenate(displayName, {lowerCase: true}) ||
-    'remote-workspace'}-${port}`;
-}
+import {Config, SSHConfig, SSH_CONFIG_HOST, VSCodeStorage} from './@core';
 
 const config = new Config('remote-workspace.config.json');
+
+const sshConfig = new SSHConfig({
+  remoteHost: config.remoteHost,
+  filePath: config.sshConfigFilePath,
+});
+
+const vscodeStorage = new VSCodeStorage();
 
 main(async () => {
   const apiServer = new Server({
@@ -80,52 +81,12 @@ main(async () => {
       let {data: workspaces} = result;
 
       if (workspaces) {
-        // Update SSH config
+        sshConfig.update(workspaces);
 
-        let remoteDevSSHConfigContent = `\
-# remote-workspace:start
+        let vscodeProcesses = await findProcess('name', /[\\/]code(?:\.exe)?/i);
 
-${workspaces
-  .map(workspace => {
-    let projectsConfigsContent = _.union(
-      ...workspace.projects.map(({ssh: {configs = []} = {}}) => configs),
-    )
-      .map(config => `  ${config}\n`)
-      .join('');
-
-    return `\
-Host ${SSH_CONFIG_HOST(workspace)}
-  User root
-  HostName ${config.remoteHost}
-  HostkeyAlias remote-workspace-${config.remoteHost}
-  ForwardAgent yes
-  Port ${workspace.port}
-${projectsConfigsContent}`;
-  })
-  .join('\n')}
-# remote-workspace:end`;
-
-        let sshConfigFilePath = config.sshConfigFilePath;
-        let sshConfigContent = FSE.existsSync(sshConfigFilePath)
-          ? FSE.readFileSync(sshConfigFilePath, 'utf8')
-          : '';
-
-        let replaced = false;
-
-        let updatedSSHConfigContent = sshConfigContent.replace(
-          /^# remote-workspace:start$[\s\S]*^# remote-workspace:end$/m,
-          () => {
-            replaced = true;
-            return remoteDevSSHConfigContent;
-          },
-        );
-
-        if (!replaced) {
-          updatedSSHConfigContent += `\n${remoteDevSSHConfigContent}\n`;
-        }
-
-        if (updatedSSHConfigContent !== sshConfigContent) {
-          FSE.outputFileSync(sshConfigFilePath, updatedSSHConfigContent);
+        if (!vscodeProcesses.length) {
+          vscodeStorage.cleanUp(workspaces);
         }
       }
 
