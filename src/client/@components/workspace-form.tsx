@@ -42,6 +42,18 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
   @observable
   private processing = false;
 
+  constructor(props: WorkspaceFormProps) {
+    super(props);
+
+    let {workspace: workspace} = props;
+
+    if (workspace) {
+      let {params, port, ...options} = workspace;
+
+      this._optionsJSON = JSON.stringify(options, undefined, 2);
+    }
+  }
+
   @computed
   private get paramKeys(): string[] {
     return _.union(
