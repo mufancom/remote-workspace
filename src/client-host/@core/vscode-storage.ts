@@ -61,17 +61,27 @@ export class VSCodeStorage {
       openedPathsList: {workspaces3, files2, workspaceLabels, fileLabels},
     } = updatedStorage;
 
-    for (let [index, entry] of workspaces3.entries()) {
-      if (isOutDatedRemoteWorkspacePath(entry)) {
-        workspaces3.splice(index, 1);
-        workspaceLabels.splice(index, 1);
+    if (workspaces3) {
+      for (let [index, entry] of workspaces3.entries()) {
+        if (isOutDatedRemoteWorkspacePath(entry)) {
+          workspaces3.splice(index, 1);
+
+          if (workspaceLabels) {
+            workspaceLabels.splice(index, 1);
+          }
+        }
       }
     }
 
-    for (let [index, entry] of files2.entries()) {
-      if (isOutDatedRemoteWorkspacePath(entry)) {
-        files2.splice(index, 1);
-        fileLabels.splice(index, 1);
+    if (files2) {
+      for (let [index, entry] of files2.entries()) {
+        if (isOutDatedRemoteWorkspacePath(entry)) {
+          files2.splice(index, 1);
+
+          if (fileLabels) {
+            fileLabels.splice(index, 1);
+          }
+        }
       }
     }
 
