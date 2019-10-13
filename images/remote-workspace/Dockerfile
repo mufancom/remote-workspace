@@ -1,12 +1,13 @@
 FROM buildpack-deps:bionic
 
-RUN apt-get update
+ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get install --assume-yes openssh-server
+RUN apt-get update
+RUN apt-get install --assume-yes ubuntu-server openssh-server
 
 WORKDIR /remote-workspace
 
-ENV NODE_VERSION 12.11.0
+ENV NODE_VERSION 12.11.1
 
 RUN wget https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz &&\
   tar -xf node-v$NODE_VERSION-linux-x64.tar.xz &&\
