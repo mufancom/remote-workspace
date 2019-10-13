@@ -37,7 +37,7 @@ export class WorkspaceFiles {
   async update(workspaces: Workspace[]): Promise<void> {
     let config = this.config;
 
-    console.info('Updating aurhorized keys...');
+    console.info('Updating authorized keys...');
 
     await writeTextFileToVolume(
       this.config.name,

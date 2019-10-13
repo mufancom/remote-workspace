@@ -13,6 +13,7 @@ import {
   RawWorkspaceProjectGit,
   WorkspaceMetadata,
   WorkspaceStatus,
+  WorkspaceStatusWithPullMergeRequestInfo,
 } from '../../../../bld/shared';
 import {parseGitURL} from '../../@utils';
 import {Config} from '../config';
@@ -52,7 +53,9 @@ export class Daemon {
     ).then(() => true, () => false);
   }
 
-  async getWorkspaceStatuses(): Promise<WorkspaceStatus[]> {
+  async getWorkspaceStatuses(): Promise<
+    WorkspaceStatusWithPullMergeRequestInfo[]
+  > {
     let gitHostToServiceConfigMap = this.config.gitHostToServiceConfigMap;
 
     let workspaces = await v.map(
