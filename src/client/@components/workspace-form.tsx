@@ -14,6 +14,7 @@ import {
   RawTemplateWorkspaceConfig,
   RawTemplatesConfig,
   RawWorkspace,
+  RawWorkspaceProject,
   WorkspaceMetadata,
 } from '../../../bld/shared';
 
@@ -55,7 +56,25 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
         displayName,
         owner,
         image,
-        projects,
+        projects: projects.map(
+          ({
+            name,
+            git: {url, branch, newBranch},
+            scripts,
+            ssh,
+          }): RawWorkspaceProject => {
+            return {
+              name,
+              git: {
+                url,
+                branch,
+                newBranch,
+              },
+              scripts,
+              ssh,
+            };
+          },
+        ),
         services,
       };
 
