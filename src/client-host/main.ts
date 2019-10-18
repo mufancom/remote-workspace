@@ -123,6 +123,7 @@ main(async () => {
         if (ready) {
           if (tunnelProcess) {
             tunnelProcess.kill('SIGINT');
+            tunnelProcess = undefined;
           }
 
           let REG_STRING_IPV4 =
@@ -167,6 +168,20 @@ main(async () => {
       } else {
         return h.response('Something is wrong.').code(400);
       }
+    },
+  });
+
+  apiServer.route({
+    method: 'GET',
+    path: '/api/untunnel',
+    handler({}, h) {
+      if (tunnelProcess) {
+        tunnelProcess.kill('SIGINT');
+        tunnelProcess = undefined;
+        return {};
+      }
+
+      return h.response('The tunnel process has been killed!').code(400);
     },
   });
 

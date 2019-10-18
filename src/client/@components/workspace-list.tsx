@@ -106,6 +106,10 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
       this.switchTunnel(workspace).catch(console.error);
     };
 
+    let onUntunnelClick = (): void => {
+      this.untunnel().catch(console.error);
+    };
+
     let onWorkspaceClick = (): void => {
       this.launch(workspace).catch(console.error);
     };
@@ -126,7 +130,7 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     return _.compact([
       workspace.ready &&
         (this.activeWorkspaceId === workspace.id ? (
-          <span>tunnel</span>
+          <span onClick={onUntunnelClick}>untunnel</span>
         ) : (
           <a onClick={onTunnelClick}>tunnel</a>
         )),
@@ -217,6 +221,20 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
       this._activeWorkspaceId = workspace.id;
 
       message.loading('Tunneling...');
+    }
+  }
+
+  private async untunnel(): Promise<void> {
+    let response = await fetch('/api/untunnel');
+
+    let {error} = await response.json();
+
+    if (error) {
+      message.error(error);
+    } else {
+      this._activeWorkspaceId = '';
+
+      message.loading('Untunneling...');
     }
   }
 
