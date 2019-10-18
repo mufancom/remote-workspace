@@ -74,7 +74,7 @@ export class Daemon {
             ),
           ),
         ),
-        _.isEqual as () => boolean,
+        _.isEqual,
       ).map(info => {
         let service = gitHostToServiceConfigMap.get(info.host);
 

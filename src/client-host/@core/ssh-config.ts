@@ -30,12 +30,6 @@ export class SSHConfig {
 
 ${workspaces
   .map(workspace => {
-    let projectsConfigsContent = _.union(
-      ...workspace.projects.map(({ssh: {configs = []} = {}}) => configs),
-    )
-      .map(config => `  ${config}\n`)
-      .join('');
-
     return `\
 Host ${SSH_CONFIG_HOST(workspace)}
   User root
@@ -43,7 +37,7 @@ Host ${SSH_CONFIG_HOST(workspace)}
   HostkeyAlias remote-workspace-${remoteHost}
   ForwardAgent yes
   Port ${workspace.port}
-${projectsConfigsContent}`;
+`;
   })
   .join('\n')}
 # remote-workspace:end`;

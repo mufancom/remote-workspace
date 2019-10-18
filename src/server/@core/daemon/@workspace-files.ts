@@ -40,7 +40,7 @@ export class WorkspaceFiles {
     console.info('Updating aurhorized keys...');
 
     await writeTextFileToVolume(
-      this.config.name,
+      config.name,
       'user-ssh',
       'authorized_keys',
       await this.buildAuthorizedKeys(),

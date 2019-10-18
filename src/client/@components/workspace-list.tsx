@@ -28,6 +28,9 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
   @observable
   private _workspaces: WorkspaceStatusWithPullMergeRequestInfo[] = [];
 
+  @observable
+  private _activeWorkspaceId: string = '';
+
   private get workspaces(): WorkspaceStatusWithPullMergeRequestInfo[] {
     if (this.props.all) {
       return this._workspaces;
@@ -36,6 +39,10 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     let owner = localStorage.email;
 
     return this._workspaces.filter(workspace => workspace.owner === owner);
+  }
+
+  private get activeWorkspaceId(): string {
+    return this._activeWorkspaceId;
   }
 
   render(): ReactNode {
@@ -95,6 +102,10 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
 
     let editingWorkspaceId = editingWorkspace && editingWorkspace.id;
 
+    let onTunnelClick = (): void => {
+      this.switchTunnel(workspace).catch(console.error);
+    };
+
     let onWorkspaceClick = (): void => {
       this.launch(workspace).catch(console.error);
     };
@@ -113,6 +124,12 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     };
 
     return _.compact([
+      workspace.ready &&
+        (this.activeWorkspaceId === workspace.id ? (
+          <span>tunnel</span>
+        ) : (
+          <a onClick={onTunnelClick}>tunnel</a>
+        )),
       workspace.ready && <a onClick={onWorkspaceClick}>workspace</a>,
       <a onClick={onLogClick}>log</a>,
       workspace.id === editingWorkspaceId ? (
@@ -178,6 +195,28 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
 
     if (data) {
       this._workspaces = data;
+    }
+  }
+
+  private async switchTunnel(workspace: WorkspaceStatus): Promise<void> {
+    let response = await fetch('/api/switch-tunnel', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        workspace,
+      }),
+    });
+
+    let {error} = await response.json();
+
+    if (error) {
+      message.error(error);
+    } else {
+      this._activeWorkspaceId = workspace.id;
+
+      message.loading('Tunneling...');
     }
   }
 
