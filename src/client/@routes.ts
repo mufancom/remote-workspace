@@ -16,6 +16,11 @@ export const workspaceRouteSchema = schema({
       autoCreate: true,
     },
   },
+  launch: {
+    $query: {
+      search: true,
+    },
+  },
 });
 
 export type WorkspaceRoute = RootRouteMatchType<

@@ -3,7 +3,7 @@ import {observer} from 'mobx-react';
 import React, {Component, ReactNode} from 'react';
 
 import {route} from './@routes';
-import {CreateView, HomeView} from './@views';
+import {CreateView, HomeView, LaunchView} from './@views';
 
 @observer
 export class App extends Component {
@@ -12,6 +12,7 @@ export class App extends Component {
       <>
         <Route match={route.home} component={HomeView} />
         <Route match={route.create} component={CreateView} />
+        <Route match={route.launch} component={LaunchView} />
       </>
     );
   }
