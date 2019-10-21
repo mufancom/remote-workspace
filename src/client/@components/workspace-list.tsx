@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import _ from 'lodash';
 import md5 from 'md5';
 import {observable} from 'mobx';
-import {observer, Observer} from 'mobx-react';
+import {Observer, observer} from 'mobx-react';
 import React, {Component, Fragment, ReactNode} from 'react';
 
 import {
