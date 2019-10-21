@@ -16,7 +16,7 @@ export const workspaceRouteSchema = schema({
       autoCreate: true,
     },
   },
-  launch: {
+  list: {
     $query: {
       search: true,
     },

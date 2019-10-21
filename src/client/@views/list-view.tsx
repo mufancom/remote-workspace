@@ -6,13 +6,13 @@ import React, {Component, ReactNode} from 'react';
 import {WorkspaceFilter, WorkspaceList} from '../@components';
 import {WorkspaceRoute} from '../@routes';
 
-export interface LaunchViewProps
-  extends RouteComponentProps<WorkspaceRoute['launch']> {
+export interface ListViewProps
+  extends RouteComponentProps<WorkspaceRoute['list']> {
   className?: string;
 }
 
 @observer
-export class LaunchView extends Component<LaunchViewProps> {
+export class ListView extends Component<ListViewProps> {
   @computed
   private get searchText(): string {
     let {match} = this.props;
