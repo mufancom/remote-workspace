@@ -2,8 +2,8 @@ import {Button, Checkbox, Descriptions, Input, Radio, message} from 'antd';
 import {CheckboxOptionType} from 'antd/lib/checkbox';
 import {RadioChangeEvent} from 'antd/lib/radio';
 import _ from 'lodash';
-import {computed, observable} from 'mobx';
-import {observer} from 'mobx-react';
+import {autorun, computed, observable, runInAction} from 'mobx';
+import {disposeOnUnmount, observer} from 'mobx-react';
 import React, {ChangeEvent, Component, ReactNode} from 'react';
 import {Dict, OmitValueOfKey} from 'tslang';
 
@@ -21,8 +21,13 @@ import {
 export interface WorkspaceFormProps {
   templates: RawTemplatesConfig;
   workspace: WorkspaceMetadata | undefined;
+  defaultWorkspaceName?: string;
+  defaultParams?: Dict<string>;
+  autoCreate?: boolean;
   onSubmitSuccess(): void;
 }
+
+const AUTO_CREATE_DELAY_TIME = 200;
 
 @observer
 export class WorkspaceForm extends Component<WorkspaceFormProps> {
@@ -404,6 +409,16 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
     );
   }
 
+  componentDidMount(): void {
+    this.initialize();
+
+    setTimeout(() => {
+      if (this.props.autoCreate) {
+        this.onSubmitButtonClick();
+      }
+    }, AUTO_CREATE_DELAY_TIME);
+  }
+
   private onWorkspaceRadioChange = (event: RadioChangeEvent): void => {
     this.selectedWorkspaceName = event.target.value || false;
   };
@@ -429,6 +444,43 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
   private onSubmitButtonClick = (): void => {
     this.submit(this.optionsJSON).catch(console.error);
   };
+
+  private initialize(): void {
+    disposeOnUnmount(
+      this,
+      autorun(() => {
+        let {
+          templates: {workspaces},
+          defaultWorkspaceName,
+          defaultParams,
+        } = this.props;
+
+        runInAction((): void => {
+          if (
+            defaultWorkspaceName &&
+            workspaces &&
+            workspaces.some(({name}) => name === defaultWorkspaceName)
+          ) {
+            this.selectedWorkspaceName = defaultWorkspaceName;
+          }
+
+          if (!defaultParams) {
+            return;
+          }
+
+          let paramKeysSet = new Set(this.paramKeys);
+
+          for (let paramKey in defaultParams) {
+            if (!paramKeysSet.has(paramKey)) {
+              continue;
+            }
+
+            this.setParam(paramKey, defaultParams[paramKey]);
+          }
+        });
+      }),
+    );
+  }
 
   private setParam(key: string, value: string): void {
     this._paramDict = {
