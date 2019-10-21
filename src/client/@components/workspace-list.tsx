@@ -53,8 +53,8 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
           let projects = workspace.projects;
 
           return (
-            <Observer>{
-              () =>
+            <Observer>
+              {() => (
                 <List.Item actions={this.renderActions(workspace)}>
                   <List.Item.Meta
                     className={classNames('workspace-list-item-meta', {
@@ -71,7 +71,12 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
                     description={
                       projects.length ? (
                         _.flatMap(projects, (project, index) =>
-                          this.renderProject(workspace, project, index, projects),
+                          this.renderProject(
+                            workspace,
+                            project,
+                            index,
+                            projects,
+                          ),
                         )
                       ) : (
                         <span>-</span>
@@ -79,7 +84,7 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
                     }
                   ></List.Item.Meta>
                 </List.Item>
-            }
+              )}
             </Observer>
           );
         }}
