@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import _ from 'lodash';
 import md5 from 'md5';
 import {observable} from 'mobx';
-import {observer} from 'mobx-react';
+import {observer, Observer} from 'mobx-react';
 import React, {Component, Fragment, ReactNode} from 'react';
 
 import {
@@ -29,7 +29,7 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
   private _workspaces: WorkspaceStatusWithPullMergeRequestInfo[] = [];
 
   @observable
-  private _activeWorkspaceId: string = '';
+  private _tunnelWorkspaceId: string | undefined;
 
   private get workspaces(): WorkspaceStatusWithPullMergeRequestInfo[] {
     if (this.props.all) {
@@ -41,8 +41,8 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     return this._workspaces.filter(workspace => workspace.owner === owner);
   }
 
-  private get activeWorkspaceId(): string {
-    return this._activeWorkspaceId;
+  private get tunnelWorkspaceId(): string | undefined {
+    return this._tunnelWorkspaceId;
   }
 
   render(): ReactNode {
@@ -53,30 +53,34 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
           let projects = workspace.projects;
 
           return (
-            <List.Item actions={this.renderActions(workspace)}>
-              <List.Item.Meta
-                className={classNames('workspace-list-item-meta', {
-                  ready: workspace.ready,
-                })}
-                avatar={
-                  <Avatar
-                    src={`https://www.gravatar.com/avatar/${md5(
-                      workspace.owner || '',
-                    )}?size=64`}
-                  />
-                }
-                title={workspace.displayName || workspace.id}
-                description={
-                  projects.length ? (
-                    _.flatMap(projects, (project, index) =>
-                      this.renderProject(workspace, project, index, projects),
-                    )
-                  ) : (
-                    <span>-</span>
-                  )
-                }
-              ></List.Item.Meta>
-            </List.Item>
+            <Observer>{
+              () =>
+                <List.Item actions={this.renderActions(workspace)}>
+                  <List.Item.Meta
+                    className={classNames('workspace-list-item-meta', {
+                      ready: workspace.ready,
+                    })}
+                    avatar={
+                      <Avatar
+                        src={`https://www.gravatar.com/avatar/${md5(
+                          workspace.owner || '',
+                        )}?size=64`}
+                      />
+                    }
+                    title={workspace.displayName || workspace.id}
+                    description={
+                      projects.length ? (
+                        _.flatMap(projects, (project, index) =>
+                          this.renderProject(workspace, project, index, projects),
+                        )
+                      ) : (
+                        <span>-</span>
+                      )
+                    }
+                  ></List.Item.Meta>
+                </List.Item>
+            }
+            </Observer>
           );
         }}
       />
@@ -129,7 +133,7 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
 
     return _.compact([
       workspace.ready &&
-        (this.activeWorkspaceId === workspace.id ? (
+        (workspace.id === this.tunnelWorkspaceId ? (
           <span onClick={onUntunnelClick}>untunnel</span>
         ) : (
           <a onClick={onTunnelClick}>tunnel</a>
@@ -200,6 +204,16 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     if (data) {
       this._workspaces = data;
     }
+
+    response = await fetch('/api/workspace-id-of-active-tunnel');
+
+    let {data: tunnelWorkspaceId} = (await response.json()) as {
+      data?: string;
+    };
+
+    if (tunnelWorkspaceId) {
+      this._tunnelWorkspaceId = tunnelWorkspaceId;
+    }
   }
 
   private async switchTunnel(workspace: WorkspaceStatus): Promise<void> {
@@ -218,9 +232,9 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     if (error) {
       message.error(error);
     } else {
-      this._activeWorkspaceId = workspace.id;
+      this._tunnelWorkspaceId = workspace.id;
 
-      message.loading('Tunneling...');
+      message.success('Tunneling...', 0.75);
     }
   }
 
@@ -232,9 +246,9 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     if (error) {
       message.error(error);
     } else {
-      this._activeWorkspaceId = '';
+      this._tunnelWorkspaceId = undefined;
 
-      message.loading('Untunneling...');
+      message.success('Untunneling...', 0.75);
     }
   }
 

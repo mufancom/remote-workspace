@@ -29,6 +29,7 @@ const sshConfig = new SSHConfig({
 const vscodeStorage = new VSCodeStorage();
 
 let tunnelProcess: ChildProcess.ChildProcess | undefined;
+let tunnelWorkspaceId: string | undefined;
 
 main(async () => {
   const apiServer = new Server({
@@ -124,6 +125,7 @@ main(async () => {
           if (tunnelProcess) {
             tunnelProcess.kill('SIGINT');
             tunnelProcess = undefined;
+            tunnelWorkspaceId = undefined;
           }
 
           let REG_STRING_IPV4 =
@@ -148,6 +150,8 @@ main(async () => {
             tmpArray.push('-L');
             tmpArray.push(sshLocalForwardConfig);
           }
+
+          tunnelWorkspaceId = workspace.id;
 
           tunnelProcess = ChildProcess.spawn(
             config.sshExecutable,
@@ -178,10 +182,21 @@ main(async () => {
       if (tunnelProcess) {
         tunnelProcess.kill('SIGINT');
         tunnelProcess = undefined;
+        tunnelWorkspaceId = undefined;
         return {};
       }
 
       return h.response('The tunnel process has been killed!').code(400);
+    },
+  });
+
+  apiServer.route({
+    method: 'GET',
+    path: '/api/workspace-id-of-active-tunnel',
+    async handler() {
+      return {
+        data: tunnelWorkspaceId,
+      };
     },
   });
 
