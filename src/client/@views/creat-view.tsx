@@ -2,11 +2,11 @@ import {PageHeader} from 'antd';
 import {RouteComponentProps} from 'boring-router-react';
 import {computed, observable} from 'mobx';
 import {observer} from 'mobx-react';
-import React, {Component, ReactNode, createRef} from 'react';
+import React, {Component, ReactNode} from 'react';
 import {Dict} from 'tslang';
 
 import {RawTemplatesConfig} from '../../../bld/shared';
-import {VersionInfo, WorkspaceForm, WorkspaceList} from '../@components';
+import {VersionInfo, WorkspaceForm} from '../@components';
 import {WorkspaceRoute} from '../@routes';
 
 export interface CreateViewProps
@@ -16,8 +16,6 @@ export interface CreateViewProps
 
 @observer
 export class CreateView extends Component<CreateViewProps> {
-  private workspaceListRef = createRef<WorkspaceList>();
-
   @observable
   private templates: RawTemplatesConfig = {};
 
@@ -52,7 +50,7 @@ export class CreateView extends Component<CreateViewProps> {
   @computed
   private get autoCreate(): boolean {
     let {match} = this.props;
-    return !!match.$params.autoCreate;
+    return typeof match.$params.autoCreate !== 'undefined';
   }
 
   render(): ReactNode {
@@ -84,7 +82,6 @@ export class CreateView extends Component<CreateViewProps> {
   }
 
   private onWorkspaceFormSubmitSuccess = (): void => {
-    this.workspaceListRef.current!.refresh();
     this.formKey++;
   };
 

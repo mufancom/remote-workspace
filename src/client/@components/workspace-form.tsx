@@ -2,8 +2,8 @@ import {Button, Checkbox, Descriptions, Input, Radio, message} from 'antd';
 import {CheckboxOptionType} from 'antd/lib/checkbox';
 import {RadioChangeEvent} from 'antd/lib/radio';
 import _ from 'lodash';
-import {autorun, computed, observable, runInAction} from 'mobx';
-import {disposeOnUnmount, observer} from 'mobx-react';
+import {computed, observable, runInAction} from 'mobx';
+import {observer} from 'mobx-react';
 import React, {ChangeEvent, Component, ReactNode} from 'react';
 import {Dict, OmitValueOfKey} from 'tslang';
 
@@ -410,13 +410,17 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
   }
 
   componentDidMount(): void {
-    this.initialize();
+    this.updateDefaultData();
 
     setTimeout(() => {
       if (this.props.autoCreate) {
         this.onSubmitButtonClick();
       }
     }, AUTO_CREATE_DELAY_TIME);
+  }
+
+  componentDidUpdate(): void {
+    this.updateDefaultData();
   }
 
   private onWorkspaceRadioChange = (event: RadioChangeEvent): void => {
@@ -445,41 +449,36 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
     this.submit(this.optionsJSON).catch(console.error);
   };
 
-  private initialize(): void {
-    disposeOnUnmount(
-      this,
-      autorun(() => {
-        let {
-          templates: {workspaces},
-          defaultWorkspaceName,
-          defaultParams,
-        } = this.props;
+  private updateDefaultData(): void {
+    let {
+      templates: {workspaces},
+      defaultWorkspaceName,
+      defaultParams,
+    } = this.props;
 
-        runInAction((): void => {
-          if (
-            defaultWorkspaceName &&
-            workspaces &&
-            workspaces.some(({name}) => name === defaultWorkspaceName)
-          ) {
-            this.selectedWorkspaceName = defaultWorkspaceName;
-          }
+    runInAction((): void => {
+      if (
+        defaultWorkspaceName &&
+        workspaces &&
+        workspaces.some(({name}) => name === defaultWorkspaceName)
+      ) {
+        this.selectedWorkspaceName = defaultWorkspaceName;
+      }
 
-          if (!defaultParams) {
-            return;
-          }
+      if (!defaultParams) {
+        return;
+      }
 
-          let paramKeysSet = new Set(this.paramKeys);
+      let paramKeysSet = new Set(this.paramKeys);
 
-          for (let paramKey in defaultParams) {
-            if (!paramKeysSet.has(paramKey)) {
-              continue;
-            }
+      for (let paramKey in defaultParams) {
+        if (!paramKeysSet.has(paramKey)) {
+          continue;
+        }
 
-            this.setParam(paramKey, defaultParams[paramKey]);
-          }
-        });
-      }),
-    );
+        this.setParam(paramKey, defaultParams[paramKey]);
+      }
+    });
   }
 
   private setParam(key: string, value: string): void {
