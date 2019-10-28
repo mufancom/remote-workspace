@@ -29,7 +29,7 @@ export type WorkspaceRoute = RootRouteMatchType<
   string
 >;
 
-let history = new BrowserHistory();
-let router = new BoringRouter(history);
+const history = new BrowserHistory();
+const router = new BoringRouter(history);
 
 export const route = router.$route(workspaceRouteSchema);
