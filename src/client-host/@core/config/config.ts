@@ -28,6 +28,11 @@ export class Config extends AbstractConfig<RawConfig> {
     return vscodeExecutable;
   }
 
+  get sshExecutable(): string {
+    let {sshExecutable = 'ssh'} = this.raw;
+    return sshExecutable;
+  }
+
   get sshConfigFilePath(): string {
     let {sshConfigFile} = this.raw;
 

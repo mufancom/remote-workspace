@@ -4,6 +4,8 @@ import _ from 'lodash';
 
 import {WorkspaceMetadata} from '../../../bld/shared';
 
+import {groupWorkspaceProjectConfigs} from './workspace';
+
 export function SSH_CONFIG_HOST({
   displayName,
   port,
@@ -30,10 +32,8 @@ export class SSHConfig {
 
 ${workspaces
   .map(workspace => {
-    let projectsConfigsContent = _.union(
-      ...workspace.projects.map(({ssh: {configs = []} = {}}) => configs),
-    )
-      .map(config => `  ${config}\n`)
+    let projectsConfigsContent = groupWorkspaceProjectConfigs(workspace)
+      .configs.map(config => `  ${config}\n`)
       .join('');
 
     return `\

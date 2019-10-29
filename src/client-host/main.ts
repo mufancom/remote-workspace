@@ -14,7 +14,13 @@ import open from 'open';
 
 import {NEVER, WorkspaceStatus} from '../../bld/shared';
 
-import {Config, SSHConfig, SSH_CONFIG_HOST, VSCodeStorage} from './@core';
+import {
+  Config,
+  SSHConfig,
+  SSH_CONFIG_HOST,
+  VSCodeStorage,
+  groupWorkspaceProjectConfigs,
+} from './@core';
 
 // tslint:disable-next-line: no-var-requires no-require-imports
 const {version} = require('../../package.json') as {version: string};
@@ -27,6 +33,9 @@ const sshConfig = new SSHConfig({
 });
 
 const vscodeStorage = new VSCodeStorage();
+
+let tunnelProcess: ChildProcess.ChildProcess | undefined;
+let tunnelWorkspaceId: string | undefined;
 
 main(async () => {
   const apiServer = new Server({
@@ -108,6 +117,60 @@ main(async () => {
   });
 
   apiServer.route({
+    method: 'POST',
+    path: '/api/switch-tunnel',
+    handler({payload}) {
+      let {workspace} = payload as {
+        workspace: WorkspaceStatus;
+      };
+
+      untunnel();
+
+      let {forwards} = groupWorkspaceProjectConfigs(workspace);
+
+      tunnelWorkspaceId = workspace.id;
+
+      tunnelProcess = ChildProcess.spawn(
+        config.sshExecutable,
+        [
+          SSH_CONFIG_HOST(workspace),
+          ..._.flatMap(forwards, forward => [
+            `-${forward.flag}`,
+            forward.value,
+          ]),
+        ],
+        {
+          detached: false,
+          shell: false,
+          stdio: 'ignore',
+        },
+      );
+
+      return {};
+    },
+  });
+
+  apiServer.route({
+    method: 'GET',
+    path: '/api/untunnel',
+    handler({}) {
+      untunnel();
+
+      return {};
+    },
+  });
+
+  apiServer.route({
+    method: 'GET',
+    path: '/api/workspace-id-of-active-tunnel',
+    async handler() {
+      return {
+        data: tunnelWorkspaceId,
+      };
+    },
+  });
+
+  apiServer.route({
     method: '*',
     path: '/{rest*}',
     handler: {
@@ -127,4 +190,12 @@ main(async () => {
   await open(url);
 
   return NEVER;
+
+  function untunnel(): void {
+    if (tunnelProcess) {
+      tunnelProcess.kill('SIGINT');
+      tunnelProcess = undefined;
+      tunnelWorkspaceId = undefined;
+    }
+  }
 });
