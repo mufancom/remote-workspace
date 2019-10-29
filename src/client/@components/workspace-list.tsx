@@ -29,7 +29,7 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
   private _workspaces: WorkspaceStatusWithPullMergeRequestInfo[] = [];
 
   @observable
-  private _tunnelWorkspaceId: string | undefined;
+  private tunnelWorkspaceId: string | undefined;
 
   private get workspaces(): WorkspaceStatusWithPullMergeRequestInfo[] {
     if (this.props.all) {
@@ -41,16 +41,12 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     return this._workspaces.filter(workspace => workspace.owner === owner);
   }
 
-  private get tunnelWorkspaceId(): string | undefined {
-    return this._tunnelWorkspaceId;
-  }
-
   render(): ReactNode {
     return (
       <List
         dataSource={this.workspaces}
         renderItem={workspace => {
-          let projects = workspace.projects;
+          let {projects} = workspace;
 
           return (
             <Observer>
@@ -217,7 +213,7 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     };
 
     if (tunnelWorkspaceId) {
-      this._tunnelWorkspaceId = tunnelWorkspaceId;
+      this.tunnelWorkspaceId = tunnelWorkspaceId;
     }
   }
 
@@ -237,7 +233,7 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     if (error) {
       message.error(error);
     } else {
-      this._tunnelWorkspaceId = workspace.id;
+      this.tunnelWorkspaceId = workspace.id;
 
       message.success('Tunneling...', 0.75);
     }
@@ -251,7 +247,7 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     if (error) {
       message.error(error);
     } else {
-      this._tunnelWorkspaceId = undefined;
+      this.tunnelWorkspaceId = undefined;
 
       message.success('Untunneling...', 0.75);
     }

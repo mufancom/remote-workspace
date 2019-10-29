@@ -4,6 +4,8 @@ import _ from 'lodash';
 
 import {WorkspaceMetadata} from '../../../bld/shared';
 
+import {groupWorkspaceProjectConfigs} from './workspace';
+
 export function SSH_CONFIG_HOST({
   displayName,
   port,
@@ -30,6 +32,10 @@ export class SSHConfig {
 
 ${workspaces
   .map(workspace => {
+    let projectsConfigsContent = groupWorkspaceProjectConfigs(workspace)
+      .configs.map(config => `  ${config}\n`)
+      .join('');
+
     return `\
 Host ${SSH_CONFIG_HOST(workspace)}
   User root
@@ -37,7 +43,7 @@ Host ${SSH_CONFIG_HOST(workspace)}
   HostkeyAlias remote-workspace-${remoteHost}
   ForwardAgent yes
   Port ${workspace.port}
-`;
+${projectsConfigsContent}`;
   })
   .join('\n')}
 # remote-workspace:end`;

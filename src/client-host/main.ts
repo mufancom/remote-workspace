@@ -14,7 +14,13 @@ import open from 'open';
 
 import {NEVER, WorkspaceStatus} from '../../bld/shared';
 
-import {Config, SSHConfig, SSH_CONFIG_HOST, VSCodeStorage} from './@core';
+import {
+  Config,
+  SSHConfig,
+  SSH_CONFIG_HOST,
+  VSCodeStorage,
+  groupWorkspaceProjectConfigs,
+} from './@core';
 
 // tslint:disable-next-line: no-var-requires no-require-imports
 const {version} = require('../../package.json') as {version: string};
@@ -113,80 +119,44 @@ main(async () => {
   apiServer.route({
     method: 'POST',
     path: '/api/switch-tunnel',
-    handler({payload}, h) {
+    handler({payload}) {
       let {workspace} = payload as {
         workspace: WorkspaceStatus;
       };
 
-      if (workspace) {
-        let {ready} = workspace;
+      untunnel();
 
-        if (ready) {
-          if (tunnelProcess) {
-            tunnelProcess.kill('SIGINT');
-            tunnelProcess = undefined;
-            tunnelWorkspaceId = undefined;
-          }
+      let {forwards} = groupWorkspaceProjectConfigs(workspace);
 
-          let REG_STRING_IPV4 =
-            '(?:([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])';
-          let REG_STRING_PORT =
-            '(?:[0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])';
-          let REG_SSH_LOCAL_FORWARD = new RegExp(
-            `${REG_STRING_IPV4}\\:${REG_STRING_PORT}\\:${REG_STRING_IPV4}\\:${REG_STRING_PORT}`,
-          );
+      tunnelWorkspaceId = workspace.id;
 
-          let sshLocalForwardConfigs = _.union(
-            ...workspace.projects.map(({ssh: {configs = []} = {}}) => configs),
-          )
-            .map(config =>
-              config.replace(/^LocalForward /, '').replace(/\s+/, ':'),
-            )
-            .filter(config => REG_SSH_LOCAL_FORWARD.test(config));
+      tunnelProcess = ChildProcess.spawn(
+        config.sshExecutable,
+        [
+          SSH_CONFIG_HOST(workspace),
+          ..._.flatMap(forwards, forward => [
+            `-${forward.flag}`,
+            forward.value,
+          ]),
+        ],
+        {
+          detached: false,
+          shell: false,
+          stdio: 'ignore',
+        },
+      );
 
-          let tmpArray: string[] = [];
-
-          for (let sshLocalForwardConfig of sshLocalForwardConfigs) {
-            tmpArray.push('-L');
-            tmpArray.push(sshLocalForwardConfig);
-          }
-
-          tunnelWorkspaceId = workspace.id;
-
-          tunnelProcess = ChildProcess.spawn(
-            config.sshExecutable,
-            [SSH_CONFIG_HOST(workspace), ...tmpArray],
-            {
-              detached: false,
-              shell: false,
-              stdio: 'ignore',
-            },
-          );
-
-          tunnelProcess.unref();
-
-          return {};
-        } else {
-          return h.response('This workspace is not ready.').code(400);
-        }
-      } else {
-        return h.response('Something is wrong.').code(400);
-      }
+      return {};
     },
   });
 
   apiServer.route({
     method: 'GET',
     path: '/api/untunnel',
-    handler({}, h) {
-      if (tunnelProcess) {
-        tunnelProcess.kill('SIGINT');
-        tunnelProcess = undefined;
-        tunnelWorkspaceId = undefined;
-        return {};
-      }
+    handler({}) {
+      untunnel();
 
-      return h.response('The tunnel process has been killed!').code(400);
+      return {};
     },
   });
 
@@ -220,4 +190,12 @@ main(async () => {
   await open(url);
 
   return NEVER;
+
+  function untunnel(): void {
+    if (tunnelProcess) {
+      tunnelProcess.kill('SIGINT');
+      tunnelProcess = undefined;
+      tunnelWorkspaceId = undefined;
+    }
+  }
 });
