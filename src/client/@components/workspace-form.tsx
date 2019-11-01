@@ -2,7 +2,7 @@ import {Button, Checkbox, Descriptions, Input, Radio, message} from 'antd';
 import {CheckboxOptionType} from 'antd/lib/checkbox';
 import {RadioChangeEvent} from 'antd/lib/radio';
 import _ from 'lodash';
-import {computed, observable} from 'mobx';
+import {computed, observable, when} from 'mobx';
 import {observer} from 'mobx-react';
 import React, {ChangeEvent, Component, ReactNode} from 'react';
 import {Dict, OmitValueOfKey} from 'tslang';
@@ -26,8 +26,6 @@ export interface WorkspaceFormProps {
   autoCreate?: boolean;
   onSubmitSuccess(): void;
 }
-
-const AUTO_CREATE_DELAY_TIME = 200;
 
 @observer
 export class WorkspaceForm extends Component<WorkspaceFormProps> {
@@ -441,11 +439,11 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
   }
 
   componentDidMount(): void {
-    setTimeout(() => {
-      if (this.props.autoCreate) {
-        this.onSubmitButtonClick();
-      }
-    }, AUTO_CREATE_DELAY_TIME);
+    let {autoCreate, templates} = this.props;
+
+    if (autoCreate) {
+      when(() => !!templates, this.onSubmitButtonClick);
+    }
   }
 
   private onWorkspaceRadioChange = (event: RadioChangeEvent): void => {
