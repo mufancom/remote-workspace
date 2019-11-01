@@ -12,6 +12,10 @@ export interface RawConfig {
    */
   vscodeExecutable?: string;
   /**
+   * Defaults to `ssh`.
+   */
+  sshExecutable?: string;
+  /**
    * Local SSH config file used by VSCode Remote SSH, defaults to
    * `~/.ssh/config`. Remote Workspace client will automatically manage part of
    * this file with generated configs for remote workspaces.
