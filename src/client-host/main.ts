@@ -6,7 +6,10 @@ import 'villa/platform/node';
 
 import H2O2 from '@hapi/h2o2';
 import {Server} from '@hapi/hapi';
+import chalk from 'chalk';
 import findProcess from 'find-process';
+import {getProxySettings} from 'get-proxy-settings';
+import HttpProxyAgent from 'http-proxy-agent';
 import _ from 'lodash';
 import {main} from 'main-function';
 import fetch from 'node-fetch';
@@ -36,11 +39,26 @@ const vscodeStorage = new VSCodeStorage();
 
 let tunnelProcess: ChildProcess.ChildProcess | undefined;
 let tunnelWorkspaceId: string | undefined;
+let agent: HttpProxyAgent | undefined;
 
 main(async () => {
   const apiServer = new Server({
     port: config.port,
   });
+
+  let proxySettings = await getProxySettings();
+  let httpProxyUrl =
+    proxySettings && proxySettings.http && proxySettings.http.toString();
+
+  if (httpProxyUrl) {
+    console.info(chalk.yellow(`Using proxy ${httpProxyUrl}`));
+    console.info(
+      chalk.yellow(
+        "Note: Set 'ProxyCommand' in ssh config to ssh through proxy\n",
+      ),
+    );
+    agent = new HttpProxyAgent(httpProxyUrl);
+  }
 
   await apiServer.register(H2O2);
 
@@ -97,7 +115,7 @@ main(async () => {
     method: 'GET',
     path: '/api/workspaces',
     async handler() {
-      let response = await fetch(`${config.remoteURL}/api/workspaces`);
+      let response = await fetch(`${config.remoteURL}/api/workspaces`, {agent});
       let result = (await response.json()) as {data?: WorkspaceStatus[]};
 
       let {data: workspaces} = result;
@@ -177,6 +195,7 @@ main(async () => {
       proxy: {
         passThrough: true,
         uri: `${config.remoteURL}{path}`,
+        agent,
       },
     },
   });
@@ -187,7 +206,9 @@ main(async () => {
 
   console.info(`Visit ${url} to manage workspaces...`);
 
-  await open(url);
+  if (config.toLaunchBrowser) {
+    await open(url);
+  }
 
   return NEVER;
 
