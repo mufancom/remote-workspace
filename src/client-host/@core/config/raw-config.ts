@@ -21,6 +21,12 @@ export interface RawConfig {
    * this file with generated configs for remote workspaces.
    */
   sshConfigFile?: string;
+  /**
+   * Defaults to `true`.
+   * Useful if you want launch this tool at system boot and do not want open
+   * browser automatically.
+   */
+  launchBrowser?: boolean;
 }
 
 export interface RawRemoteConfig {
