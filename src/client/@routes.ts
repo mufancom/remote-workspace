@@ -13,7 +13,6 @@ export const workspaceRouteSchema = schema({
     $query: {
       template: true,
       params: true,
-      autoCreate: true,
     },
   },
   list: {

@@ -47,14 +47,7 @@ export class CreateView extends Component<CreateViewProps> {
     }, {});
   }
 
-  @computed
-  private get autoCreate(): boolean {
-    let {match} = this.props;
-    return typeof match.$params.autoCreate !== 'undefined';
-  }
-
   render(): ReactNode {
-    let autoCreate = this.autoCreate;
     let defaultParams = this.defaultParams;
     let defaultWorkspaceName = this.defaultWorkspaceName;
 
@@ -67,7 +60,6 @@ export class CreateView extends Component<CreateViewProps> {
             key={this.formKey}
             templates={this.templates}
             workspace={undefined}
-            autoCreate={autoCreate}
             defaultParams={defaultParams}
             defaultWorkspaceName={defaultWorkspaceName}
             onSubmitSuccess={this.onWorkspaceFormSubmitSuccess}

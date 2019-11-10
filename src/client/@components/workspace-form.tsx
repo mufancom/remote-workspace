@@ -2,7 +2,7 @@ import {Button, Checkbox, Descriptions, Input, Radio, message} from 'antd';
 import {CheckboxOptionType} from 'antd/lib/checkbox';
 import {RadioChangeEvent} from 'antd/lib/radio';
 import _ from 'lodash';
-import {computed, observable, when} from 'mobx';
+import {computed, observable, runInAction, when} from 'mobx';
 import {observer} from 'mobx-react';
 import React, {ChangeEvent, Component, ReactNode} from 'react';
 import {Dict, OmitValueOfKey} from 'tslang';
@@ -23,14 +23,13 @@ export interface WorkspaceFormProps {
   workspace: WorkspaceMetadata | undefined;
   defaultWorkspaceName?: string;
   defaultParams?: Dict<string>;
-  autoCreate?: boolean;
   onSubmitSuccess(): void;
 }
 
 @observer
 export class WorkspaceForm extends Component<WorkspaceFormProps> {
   @observable
-  private _selectedWorkspaceName: string | undefined;
+  private selectedWorkspaceName = 'default';
 
   @observable
   private _selectedProjectNames: string[] = [];
@@ -46,23 +45,6 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
   @observable
   private processing = false;
-
-  @computed
-  private get selectedWorkspaceName(): string {
-    let {
-      templates: {workspaces},
-      defaultWorkspaceName,
-    } = this.props;
-
-    let _defaultWorkspaceName =
-      defaultWorkspaceName &&
-      workspaces &&
-      workspaces.some(({name}) => name === defaultWorkspaceName)
-        ? defaultWorkspaceName
-        : 'default';
-
-    return this._selectedWorkspaceName || _defaultWorkspaceName;
-  }
 
   constructor(props: WorkspaceFormProps) {
     super(props);
@@ -115,23 +97,9 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
   @computed
   private get paramDict(): Dict<string | undefined> {
-    let {workspace, defaultParams = {}} = this.props;
+    let {workspace} = this.props;
 
-    let paramKeysSet = new Set(this.paramKeys);
-    let _defaultParams: Dict<string> = {};
-
-    for (let paramKey in defaultParams) {
-      if (!paramKeysSet.has(paramKey)) {
-        continue;
-      }
-
-      _defaultParams[paramKey] = defaultParams[paramKey];
-    }
-
-    return {
-      ..._defaultParams,
-      ...(this._paramDict || (workspace && workspace.params) || {}),
-    };
+    return this._paramDict || (workspace && workspace.params) || {};
   }
 
   @computed
@@ -439,15 +407,49 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
   }
 
   componentDidMount(): void {
-    let {autoCreate, templates} = this.props;
+    let {templates} = this.props;
 
-    if (autoCreate) {
-      when(() => !!templates, this.onSubmitButtonClick);
-    }
+    when(
+      () => !!templates,
+      () => {
+        let {
+          templates: {workspaces},
+          defaultWorkspaceName,
+          defaultParams = {},
+        } = this.props;
+
+        let _defaultWorkspaceName =
+          defaultWorkspaceName &&
+          workspaces &&
+          workspaces.some(({name}) => name === defaultWorkspaceName)
+            ? defaultWorkspaceName
+            : undefined;
+
+        if (!_defaultWorkspaceName) {
+          return;
+        }
+
+        let paramKeysSet = new Set(this.paramKeys);
+        let _defaultParams: Dict<string> = {};
+
+        for (let paramKey in defaultParams) {
+          if (!paramKeysSet.has(paramKey)) {
+            continue;
+          }
+
+          _defaultParams[paramKey] = defaultParams[paramKey];
+        }
+
+        runInAction(() => {
+          this.selectedWorkspaceName = _defaultWorkspaceName!;
+          this._paramDict = {..._defaultParams, ...(this._paramDict || {})};
+        });
+      },
+    );
   }
 
   private onWorkspaceRadioChange = (event: RadioChangeEvent): void => {
-    this._selectedWorkspaceName = event.target.value;
+    this.selectedWorkspaceName = event.target.value || false;
   };
 
   private onProjectCheckboxChange = (projects: string[]): void => {
