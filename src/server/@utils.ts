@@ -49,7 +49,8 @@ export interface ParseGitURLResult {
 export function parseGitURL(url: string): ParseGitURLResult | undefined {
   let [, host, project] = (url.match(/@(.+?):(.+)\.git/) || []) as (
     | string
-    | undefined)[];
+    | undefined
+  )[];
 
   return host && project ? {host, project} : undefined;
 }
