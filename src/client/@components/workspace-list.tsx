@@ -11,6 +11,7 @@ import {
   WorkspaceProjectWithPullMergeRequestInfo,
   WorkspaceStatus,
   WorkspaceStatusWithPullMergeRequestInfo,
+  groupWorkspaceProjectConfigs,
 } from '../../../bld/shared';
 
 const REFRESH_INTERVAL_DEFAULT = 10000;
@@ -147,9 +148,11 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     return _.compact([
       workspace.ready &&
         (workspace.id === this.tunnelWorkspaceId ? (
-          <span onClick={onUntunnelClick}>untunnel</span>
-        ) : (
+          <a onClick={onUntunnelClick}>untunnel</a>
+        ) : groupWorkspaceProjectConfigs(workspace).forwards.length ? (
           <a onClick={onTunnelClick}>tunnel</a>
+        ) : (
+          undefined
         )),
       workspace.ready && <a onClick={onWorkspaceClick}>workspace</a>,
       <a onClick={onLogClick}>log</a>,

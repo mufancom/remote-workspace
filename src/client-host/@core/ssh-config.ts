@@ -2,9 +2,10 @@ import * as FSE from 'fs-extra';
 import hyphenate from 'hyphenate';
 import _ from 'lodash';
 
-import {WorkspaceMetadata} from '../../../bld/shared';
-
-import {groupWorkspaceProjectConfigs} from './workspace';
+import {
+  WorkspaceMetadata,
+  groupWorkspaceProjectConfigs,
+} from '../../../bld/shared';
 
 export function SSH_CONFIG_HOST({
   displayName,

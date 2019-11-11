@@ -14,16 +14,15 @@ import _ from 'lodash';
 import {main} from 'main-function';
 import fetch from 'node-fetch';
 import open from 'open';
-
-import {NEVER, WorkspaceStatus} from '../../bld/shared';
+import * as v from 'villa';
 
 import {
-  Config,
-  SSHConfig,
-  SSH_CONFIG_HOST,
-  VSCodeStorage,
+  NEVER,
+  WorkspaceStatus,
   groupWorkspaceProjectConfigs,
-} from './@core';
+} from '../../bld/shared';
+
+import {Config, SSHConfig, SSH_CONFIG_HOST, VSCodeStorage} from './@core';
 
 // tslint:disable-next-line: no-var-requires no-require-imports
 const {version} = require('../../package.json') as {version: string};
@@ -51,10 +50,10 @@ main(async () => {
     proxySettings && proxySettings.http && proxySettings.http.toString();
 
   if (httpProxyUrl) {
-    console.info(chalk.yellow(`Using proxy ${httpProxyUrl}`));
+    console.info(chalk.yellow(`Using proxy ${httpProxyUrl}.`));
     console.info(
       chalk.yellow(
-        "Note: Set 'ProxyCommand' in ssh config to ssh through proxy\n",
+        "Hint: Set 'ProxyCommand' in ssh config to ssh through proxy.\n",
       ),
     );
     agent = new HttpProxyAgent(httpProxyUrl);
@@ -107,6 +106,8 @@ main(async () => {
 
       subprocess.unref();
 
+      switchTunnel(workspace);
+
       return {};
     },
   });
@@ -142,27 +143,7 @@ main(async () => {
         workspace: WorkspaceStatus;
       };
 
-      untunnel();
-
-      let {forwards} = groupWorkspaceProjectConfigs(workspace);
-
-      tunnelWorkspaceId = workspace.id;
-
-      tunnelProcess = ChildProcess.spawn(
-        config.sshExecutable,
-        [
-          SSH_CONFIG_HOST(workspace),
-          ..._.flatMap(forwards, forward => [
-            `-${forward.flag}`,
-            forward.value,
-          ]),
-        ],
-        {
-          detached: false,
-          shell: false,
-          stdio: 'ignore',
-        },
-      );
+      switchTunnel(workspace);
 
       return {};
     },
@@ -211,6 +192,44 @@ main(async () => {
   }
 
   return NEVER;
+
+  function switchTunnel(workspace: WorkspaceStatus): void {
+    if (tunnelWorkspaceId === workspace.id) {
+      return;
+    }
+
+    let {forwards} = groupWorkspaceProjectConfigs(workspace);
+
+    if (!forwards.length) {
+      return;
+    }
+
+    untunnel();
+
+    tunnelWorkspaceId = workspace.id;
+
+    tunnelProcess = ChildProcess.spawn(
+      config.sshExecutable,
+      [
+        SSH_CONFIG_HOST(workspace),
+        ..._.flatMap(forwards, forward => [`-${forward.flag}`, forward.value]),
+      ],
+      {
+        detached: false,
+        shell: false,
+        stdio: 'ignore',
+      },
+    );
+
+    v.awaitable(tunnelProcess)
+      .finally(() => {
+        if (tunnelWorkspaceId === workspace.id) {
+          tunnelProcess = undefined;
+          tunnelWorkspaceId = undefined;
+        }
+      })
+      .catch(console.error);
+  }
 
   function untunnel(): void {
     if (tunnelProcess) {
