@@ -15,10 +15,15 @@ import {
 
 const REFRESH_INTERVAL_DEFAULT = 10000;
 
+export type WorkspaceFilter = (
+  workspace: WorkspaceStatusWithPullMergeRequestInfo,
+) => boolean;
+
 export interface WorkspaceListProps {
   editingWorkspace: WorkspaceMetadata | undefined;
   all: boolean;
-  onEditClick(workspace: WorkspaceMetadata): void;
+  filter?: WorkspaceFilter;
+  onEditClick?(workspace: WorkspaceMetadata): void;
 }
 
 @observer
@@ -32,13 +37,19 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
   private tunnelWorkspaceId: string | undefined;
 
   private get workspaces(): WorkspaceStatusWithPullMergeRequestInfo[] {
-    if (this.props.all) {
-      return this._workspaces;
+    let {all, filter} = this.props;
+
+    let workspaces = this._workspaces.filter(workspace =>
+      filter ? filter(workspace) : true,
+    );
+
+    if (all) {
+      return workspaces;
     }
 
     let owner = localStorage.email;
 
-    return this._workspaces.filter(workspace => workspace.owner === owner);
+    return workspaces.filter(workspace => workspace.owner === owner);
   }
 
   render(): ReactNode {
@@ -103,7 +114,7 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
   }
 
   private renderActions(workspace: WorkspaceStatus): ReactNode[] {
-    let {editingWorkspace} = this.props;
+    let {editingWorkspace, onEditClick: _onEditClick} = this.props;
 
     let editingWorkspaceId = editingWorkspace && editingWorkspace.id;
 
@@ -123,10 +134,11 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
       this.log(workspace.id).catch(console.error);
     };
 
-    let onEditClick = (): void => {
-      let {onEditClick} = this.props;
-      onEditClick(workspace);
-    };
+    let onEditClick =
+      _onEditClick &&
+      ((): void => {
+        _onEditClick!(workspace);
+      });
 
     let onDeleteConfirm = (): void => {
       this.delete(workspace.id).catch(console.error);
@@ -141,10 +153,14 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
         )),
       workspace.ready && <a onClick={onWorkspaceClick}>workspace</a>,
       <a onClick={onLogClick}>log</a>,
-      workspace.id === editingWorkspaceId ? (
-        <span>edit</span>
+      _onEditClick ? (
+        workspace.id === editingWorkspaceId ? (
+          <span>edit</span>
+        ) : (
+          <a onClick={onEditClick}>edit</a>
+        )
       ) : (
-        <a onClick={onEditClick}>edit</a>
+        undefined
       ),
       <Popconfirm
         placement="bottom"

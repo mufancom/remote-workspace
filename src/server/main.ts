@@ -134,11 +134,19 @@ main(async () => {
 
   apiServer.route({
     method: 'GET',
-    path: '/{param*}',
+    path: '/static/{param*}',
     handler: {
       directory: {
         path: '.',
       },
+    },
+  });
+
+  apiServer.route({
+    method: 'GET',
+    path: '/{param*}',
+    handler({}, toolkit) {
+      return toolkit.file(Path.join(__dirname, '../../bld/client/index.html'));
     },
   });
 

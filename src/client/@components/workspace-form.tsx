@@ -2,7 +2,7 @@ import {Button, Checkbox, Descriptions, Input, Radio, message} from 'antd';
 import {CheckboxOptionType} from 'antd/lib/checkbox';
 import {RadioChangeEvent} from 'antd/lib/radio';
 import _ from 'lodash';
-import {computed, observable} from 'mobx';
+import {computed, observable, runInAction, when} from 'mobx';
 import {observer} from 'mobx-react';
 import React, {ChangeEvent, Component, ReactNode} from 'react';
 import {Dict, OmitValueOfKey} from 'tslang';
@@ -21,6 +21,8 @@ import {
 export interface WorkspaceFormProps {
   templates: RawTemplatesConfig;
   workspace: WorkspaceMetadata | undefined;
+  defaultWorkspaceName?: string;
+  defaultParams?: Dict<string>;
   onSubmitSuccess(): void;
 }
 
@@ -401,6 +403,48 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
         {this.paramsRendering}
         {this.optionsJSONRendering}
       </Descriptions>
+    );
+  }
+
+  componentDidMount(): void {
+    let {templates} = this.props;
+
+    when(
+      () => !!templates,
+      () => {
+        let {
+          templates: {workspaces},
+          defaultWorkspaceName,
+          defaultParams = {},
+        } = this.props;
+
+        let _defaultWorkspaceName =
+          defaultWorkspaceName &&
+          workspaces &&
+          workspaces.some(({name}) => name === defaultWorkspaceName)
+            ? defaultWorkspaceName
+            : undefined;
+
+        if (!_defaultWorkspaceName) {
+          return;
+        }
+
+        let paramKeysSet = new Set(this.paramKeys);
+        let _defaultParams: Dict<string> = {};
+
+        for (let paramKey in defaultParams) {
+          if (!paramKeysSet.has(paramKey)) {
+            continue;
+          }
+
+          _defaultParams[paramKey] = defaultParams[paramKey];
+        }
+
+        runInAction(() => {
+          this.selectedWorkspaceName = _defaultWorkspaceName!;
+          this._paramDict = {..._defaultParams, ...(this._paramDict || {})};
+        });
+      },
     );
   }
 
