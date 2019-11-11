@@ -50,7 +50,10 @@ export class Daemon {
   async isWorkspaceReady(id: string): Promise<boolean> {
     return FSE.stat(
       Path.join(this.config.dir, 'workspaces', id, '.ready'),
-    ).then(() => true, () => false);
+    ).then(
+      () => true,
+      () => false,
+    );
   }
 
   async getWorkspaceStatuses(): Promise<

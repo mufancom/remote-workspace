@@ -80,12 +80,12 @@
     "@types/uuid": "^3.4.5",
     "glob": "^7.1.4",
     "parcel-bundler": "^1.12.3",
-    "prettier": "^1.18.2",
+    "prettier": "^1.19.1",
     "rimraf": "^3.0.0",
     "ts-node": "^8.4.1",
     "tslib": "^1.10.0",
     "tslint": "^5.20.0",
-    "typescript": "^3.6.3",
+    "typescript": "^3.7.2",
     "typescript-tslint-plugin": "^0.5.4"
   }
 }

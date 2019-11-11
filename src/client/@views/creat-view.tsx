@@ -1,6 +1,6 @@
 import {PageHeader} from 'antd';
 import {RouteComponentProps} from 'boring-router-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, runInAction} from 'mobx';
 import {observer} from 'mobx-react';
 import React, {Component, ReactNode} from 'react';
 import {Dict} from 'tslang';
@@ -84,7 +84,9 @@ export class CreateView extends Component<CreateViewProps> {
     };
 
     if (data) {
-      this.templates = data;
+      runInAction(() => {
+        this.templates = data!;
+      });
     }
   }
 }
