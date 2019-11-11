@@ -215,6 +215,7 @@ main(async () => {
         ..._.flatMap(forwards, forward => [`-${forward.flag}`, forward.value]),
       ],
       {
+        windowsHide: true,
         detached: false,
         shell: false,
         stdio: 'ignore',
