@@ -211,8 +211,9 @@ main(async () => {
     tunnelProcess = ChildProcess.spawn(
       config.sshExecutable,
       [
-        SSH_CONFIG_HOST(workspace),
+        '-N',
         ..._.flatMap(forwards, forward => [`-${forward.flag}`, forward.value]),
+        SSH_CONFIG_HOST(workspace),
       ],
       {
         windowsHide: true,
