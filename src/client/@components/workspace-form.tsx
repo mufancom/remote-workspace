@@ -407,10 +407,8 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
   }
 
   componentDidMount(): void {
-    let {templates} = this.props;
-
     when(
-      () => !!templates,
+      () => !!this.props.templates.workspaces?.length,
       () => {
         let {
           templates: {workspaces},
@@ -420,8 +418,7 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
         let _defaultWorkspaceName =
           defaultWorkspaceName &&
-          workspaces &&
-          workspaces.some(({name}) => name === defaultWorkspaceName)
+          workspaces?.some(({name}) => name === defaultWorkspaceName)
             ? defaultWorkspaceName
             : undefined;
 
@@ -442,7 +439,7 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
         runInAction(() => {
           this.selectedWorkspaceName = _defaultWorkspaceName!;
-          this._paramDict = {..._defaultParams, ...(this._paramDict || {})};
+          this._paramDict = {..._defaultParams, ...(this._paramDict ?? {})};
         });
       },
     );
