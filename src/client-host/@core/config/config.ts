@@ -40,4 +40,10 @@ export class Config extends AbstractConfig<RawConfig> {
       ? Path.resolve(sshConfigFile)
       : Path.join(OS.homedir(), '.ssh/config');
   }
+
+  get toLaunchBrowser(): boolean {
+    let {launchBrowser = true} = this.raw;
+
+    return launchBrowser;
+  }
 }
