@@ -18,6 +18,7 @@ import * as v from 'villa';
 
 import {
   NEVER,
+  PortForwardingCommandLineArgs,
   WorkspaceStatus,
   groupWorkspaceProjectConfigs,
 } from '../../bld/shared';
@@ -208,6 +209,35 @@ main(async () => {
 
     tunnelWorkspaceId = workspace.id;
 
+    let forwardParameterRegex = /(^(?:.*:)?\d+):((?:.*:)?\d+$)/;
+
+    console.info(
+      `Starting port forwarding for workspace ${workspace.displayName}:`,
+    );
+    let portsByGroup = _.groupBy(forwards, config => config.flag);
+
+    if (portsByGroup.R) {
+      console.info(`  Remote\n${formatPortParameter(portsByGroup.R)}`);
+    }
+
+    if (portsByGroup.L) {
+      console.info(`  Local\n${formatPortParameter(portsByGroup.L)}`);
+    }
+
+    function formatPortParameter(
+      forwards: PortForwardingCommandLineArgs[],
+    ): string {
+      return forwards
+        .map(config =>
+          config.value
+            .replace(forwardParameterRegex, `$1 ${chalk.green('to')} $2`) // Replace ':' with 'to'
+            .replace(/127\.0\.0\.1:/g, '')
+            .trim(),
+        )
+        .map(v => `    ${v}`)
+        .join('\n');
+    }
+
     tunnelProcess = ChildProcess.spawn(
       config.sshExecutable,
       [
@@ -230,7 +260,12 @@ main(async () => {
           tunnelWorkspaceId = undefined;
         }
       })
-      .catch(console.error);
+      .catch(error =>
+        console.error(
+          chalk.red('Tunnel process stops unexpectedly with error:\n'),
+          error,
+        ),
+      );
   }
 
   function untunnel(): void {
