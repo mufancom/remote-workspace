@@ -205,10 +205,12 @@ main(async () => {
 
     console.info(
       `\
-Starting port forwarding for workspace ${workspace.displayName}:
-${forwards
-  .map(forward => `  ${forward.type} ${forward.source} ${forward.target}`)
-  .join('\n')}`,
+Starting port forwarding for workspace ${workspace.displayName}...
+${chalk.yellow(
+  forwards
+    .map(forward => `  ${forward.type} ${forward.source} ${forward.target}`)
+    .join('\n'),
+)}`,
     );
 
     tunnelProcess = ChildProcess.spawn(
