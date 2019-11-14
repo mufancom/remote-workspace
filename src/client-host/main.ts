@@ -50,12 +50,7 @@ main(async () => {
     proxySettings && proxySettings.http && proxySettings.http.toString();
 
   if (httpProxyUrl) {
-    console.info(chalk.yellow(`Using proxy ${httpProxyUrl}.`));
-    console.info(
-      chalk.yellow(
-        "Hint: Set 'ProxyCommand' in ssh config to ssh through proxy.\n",
-      ),
-    );
+    console.info(`Using proxy ${httpProxyUrl}.`);
     agent = new HttpProxyAgent(httpProxyUrl);
   }
 
@@ -208,6 +203,16 @@ main(async () => {
 
     tunnelWorkspaceId = workspace.id;
 
+    console.info(
+      `\
+Starting port forwarding for workspace ${workspace.displayName}...
+${chalk.yellow(
+  forwards
+    .map(forward => `  ${forward.type} ${forward.source} ${forward.target}`)
+    .join('\n'),
+)}`,
+    );
+
     tunnelProcess = ChildProcess.spawn(
       config.sshExecutable,
       [
@@ -230,7 +235,12 @@ main(async () => {
           tunnelWorkspaceId = undefined;
         }
       })
-      .catch(console.error);
+      .catch(error =>
+        console.error(
+          chalk.red('Tunnel process stops unexpectedly with error:\n'),
+          error,
+        ),
+      );
   }
 
   function untunnel(): void {

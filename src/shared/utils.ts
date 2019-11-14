@@ -5,6 +5,9 @@ import {RawWorkspace} from './types';
 export const NEVER = new Promise<never>(() => {});
 
 export interface PortForwardingCommandLineArgs {
+  type: 'LocalForward' | 'RemoteForward';
+  source: string;
+  target: string;
   flag: 'L' | 'R';
   value: string;
 }
@@ -25,7 +28,7 @@ export function groupWorkspaceProjectConfigs({
   let forwards: PortForwardingCommandLineArgs[] = [];
 
   for (let config of configs) {
-    let groups = /^(LocalForward|RemoteForward)\s+([^:]+:\d+)\s([^:]+:\d+)\s*(?:$|#)/.exec(
+    let groups = /^(LocalForward|RemoteForward)\s+((?:[^:]+:)?\d+)\s+([^:]+:\d+)\s*(?:$|#)/.exec(
       config,
     );
 
@@ -33,6 +36,9 @@ export function groupWorkspaceProjectConfigs({
       let [, type, source, target] = groups;
 
       forwards.push({
+        type: type as 'LocalForward' | 'RemoteForward',
+        source,
+        target,
         flag: type[0] as 'L' | 'R',
         value: `${source}:${target}`,
       });

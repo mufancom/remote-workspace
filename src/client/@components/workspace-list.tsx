@@ -37,6 +37,9 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
   @observable
   private tunnelWorkspaceId: string | undefined;
 
+  @observable
+  private loading = true;
+
   private get workspaces(): WorkspaceStatusWithPullMergeRequestInfo[] {
     let {all, filter} = this.props;
 
@@ -57,6 +60,7 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     return (
       <List
         dataSource={this.workspaces}
+        loading={this.loading}
         renderItem={workspace => {
           let {projects} = workspace;
 
@@ -223,6 +227,10 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
 
     if (data) {
       this._workspaces = data;
+
+      if (this.loading) {
+        this.loading = false;
+      }
     }
 
     response = await fetch('/api/workspace-id-of-active-tunnel');
