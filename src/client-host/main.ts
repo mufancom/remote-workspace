@@ -18,7 +18,6 @@ import * as v from 'villa';
 
 import {
   NEVER,
-  PortForwardingCommandLineArgs,
   WorkspaceStatus,
   groupWorkspaceProjectConfigs,
 } from '../../bld/shared';
@@ -51,12 +50,7 @@ main(async () => {
     proxySettings && proxySettings.http && proxySettings.http.toString();
 
   if (httpProxyUrl) {
-    console.info(chalk.yellow(`Using proxy ${httpProxyUrl}.`));
-    console.info(
-      chalk.yellow(
-        "Hint: Set 'ProxyCommand' in ssh config to ssh through proxy.\n",
-      ),
-    );
+    console.info(`Using proxy ${httpProxyUrl}.`);
     agent = new HttpProxyAgent(httpProxyUrl);
   }
 
@@ -209,34 +203,13 @@ main(async () => {
 
     tunnelWorkspaceId = workspace.id;
 
-    let forwardParameterRegex = /(^(?:.*:)?\d+):((?:.*:)?\d+$)/;
-
     console.info(
-      `Starting port forwarding for workspace ${workspace.displayName}:`,
+      `\
+Starting port forwarding for workspace ${workspace.displayName}:
+${forwards
+  .map(forward => `  ${forward.type} ${forward.source} ${forward.target}`)
+  .join('\n')}`,
     );
-    let portsByGroup = _.groupBy(forwards, config => config.flag);
-
-    if (portsByGroup.R) {
-      console.info(`  Remote\n${formatPortParameter(portsByGroup.R)}`);
-    }
-
-    if (portsByGroup.L) {
-      console.info(`  Local\n${formatPortParameter(portsByGroup.L)}`);
-    }
-
-    function formatPortParameter(
-      forwards: PortForwardingCommandLineArgs[],
-    ): string {
-      return forwards
-        .map(config =>
-          config.value
-            .replace(forwardParameterRegex, `$1 ${chalk.green('to')} $2`) // Replace ':' with 'to'
-            .replace(/127\.0\.0\.1:/g, '')
-            .trim(),
-        )
-        .map(v => `    ${v}`)
-        .join('\n');
-    }
 
     tunnelProcess = ChildProcess.spawn(
       config.sshExecutable,
