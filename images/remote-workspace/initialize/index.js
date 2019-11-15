@@ -1,6 +1,7 @@
 // @ts-check
 
 const ChildProcess = require('child_process');
+const {createHash} = require('crypto');
 const Path = require('path');
 
 require('villa/platform/node');
@@ -64,7 +65,11 @@ main(async () => {
     git: {url, branch = 'master', newBranch = branch},
     scripts = {},
   } of projects) {
-    let repositoryPath = Path.join('/root/repositories', name);
+    let urlHash = createHash('md5')
+      .update(url)
+      .digest('hex');
+
+    let repositoryPath = Path.join('/root/repositories', `${urlHash}-${name}`);
     let workspacePath = Path.join('/root/workspace');
     let projectPath = Path.join(workspacePath, name);
 
