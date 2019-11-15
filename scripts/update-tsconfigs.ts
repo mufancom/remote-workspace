@@ -33,7 +33,7 @@ for (let tsConfigPath of tsConfigPaths) {
 
   let compositeTSConfigPath = Path.join(dirName, COMPOSITE_TSCONFIG_FILE_NAME);
 
-  let compositeTSConfigJSONC = FS.readFileSync(compositeTSConfigPath, 'utf-8');
+  let compositeTSConfigJSONC = FS.readFileSync(compositeTSConfigPath, 'utf8');
 
   let compositeTSConfig = JSON.parse(
     stripJsonComments(compositeTSConfigJSONC),
@@ -108,7 +108,7 @@ function updateTSConfigFile(path: string, config: TSConfig): void {
   });
 
   let originalJSON = FS.existsSync(path)
-    ? FS.readFileSync(path, 'utf-8')
+    ? FS.readFileSync(path, 'utf8')
     : undefined;
 
   if (json !== originalJSON) {

@@ -7,6 +7,7 @@ require('villa/platform/node');
 
 const FSE = require('fs-extra');
 const {main} = require('main-function');
+const stripJSONComments = require('strip-json-comments');
 const v = require('villa');
 
 /** @type {import('../../../bld/shared').WorkspaceMetadata} */
@@ -111,6 +112,22 @@ main(async () => {
       {cwd: projectPath},
     );
 
+    let inPlaceProjectConfigPath = Path.join(
+      projectPath,
+      'remote-workspace.json',
+    );
+
+    let inPlaceProjectConfig = await gracefulReadJSONFile(
+      inPlaceProjectConfigPath,
+    );
+
+    if (inPlaceProjectConfig) {
+      scripts = {
+        ...inPlaceProjectConfig.scripts,
+        ...scripts,
+      };
+    }
+
     if (scripts.initialize) {
       console.info('Running initialization scripts...');
       console.info(scripts.initialize);
@@ -184,4 +201,15 @@ async function exists(path, type) {
     },
     () => false,
   );
+}
+
+/**
+ * @param {string} path
+ */
+async function gracefulReadJSONFile(path) {
+  let jsonc = await FSE.readFile(path, 'utf8').catch(() => undefined);
+
+  let json = jsonc && stripJSONComments(jsonc);
+
+  return json && JSON.parse(json);
 }

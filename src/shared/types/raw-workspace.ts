@@ -69,6 +69,11 @@ export interface RawWorkspaceProject {
   ssh?: RawWorkspaceProjectSSH;
 }
 
+export type RawWorkspaceProjectInPlaceConfig = Pick<
+  RawWorkspaceProject,
+  'scripts' | 'ssh'
+>;
+
 export interface RawWorkspaceService {
   /**
    * Service name, the network alias will be added using this name.

@@ -23,7 +23,7 @@ class Config<TRaw> extends EventEmitter {
   }
 
   private load(): void {
-    let jsonc = FS.readFileSync(this.path, 'utf-8');
+    let jsonc = FS.readFileSync(this.path, 'utf8');
     let json = stripJSONComments(jsonc);
 
     this.raw = JSON.parse(json);

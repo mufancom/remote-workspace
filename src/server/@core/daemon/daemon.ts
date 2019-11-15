@@ -10,11 +10,14 @@ import * as v from 'villa';
 
 import {
   CreateWorkspaceOptions,
+  RawWorkspaceProject,
   RawWorkspaceProjectGit,
+  RawWorkspaceProjectInPlaceConfig,
   WorkspaceMetadata,
   WorkspaceStatus,
   WorkspaceStatusWithPullMergeRequestInfo,
 } from '../../../../bld/shared';
+import {gracefulReadJSONFile} from '../../../node-shared';
 import {parseGitURL} from '../../@utils';
 import {Config} from '../config';
 import {Workspace} from '../workspace';
@@ -24,6 +27,20 @@ import {
   listPullMergeRequests,
 } from './@git-services';
 import {WorkspaceFiles} from './@workspace-files';
+
+export function PROJECT_CONFIG_PATH(
+  config: Config,
+  workspace: WorkspaceMetadata,
+  project: RawWorkspaceProject,
+): string {
+  return Path.join(
+    config.dir,
+    'workspaces',
+    workspace.id,
+    project.name,
+    'remote-workspace.json',
+  );
+}
 
 export interface DaemonStorageData {
   workspaces?: WorkspaceMetadata[];
@@ -66,6 +83,15 @@ export class Daemon {
       async (metadata): Promise<WorkspaceStatus> => {
         return {
           ...metadata,
+          projects: await v.map(
+            metadata.projects,
+            async (project): Promise<RawWorkspaceProject> => {
+              return {
+                ...project,
+                ...(await this.getInPlaceProjectConfig(metadata, project)),
+              };
+            },
+          ),
           ready: await this.isWorkspaceReady(metadata.id),
         };
       },
@@ -225,6 +251,17 @@ export class Daemon {
       .split('\n')
       .sort()
       .join('\n');
+  }
+
+  private async getInPlaceProjectConfig(
+    workspace: WorkspaceMetadata,
+    project: RawWorkspaceProject,
+  ): Promise<RawWorkspaceProjectInPlaceConfig | undefined> {
+    let configFilePath = PROJECT_CONFIG_PATH(this.config, workspace, project);
+
+    return gracefulReadJSONFile<RawWorkspaceProjectInPlaceConfig>(
+      configFilePath,
+    );
   }
 
   private async update(): Promise<void> {

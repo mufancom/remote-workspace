@@ -32,7 +32,7 @@ export class Config extends AbstractConfig<RawConfig> {
       git: {identityFile},
     } = this.raw;
 
-    return FS.readFileSync(Path.join(this.dir, identityFile), 'utf-8');
+    return FS.readFileSync(Path.join(this.dir, identityFile), 'utf8');
   }
 
   get users(): RawUserConfig[] {

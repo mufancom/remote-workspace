@@ -63,7 +63,7 @@ v.parallel(
   });
 
 function resolve(configPath: string): void {
-  let jsonc = FS.readFileSync(configPath, 'utf-8');
+  let jsonc = FS.readFileSync(configPath, 'utf8');
 
   interface Reference {
     path: string;
