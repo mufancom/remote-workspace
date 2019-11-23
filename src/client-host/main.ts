@@ -8,7 +8,6 @@ import H2O2 from '@hapi/h2o2';
 import {Server} from '@hapi/hapi';
 import chalk from 'chalk';
 import findProcess from 'find-process';
-import {getProxySettings} from 'get-proxy-settings';
 import HttpProxyAgent from 'http-proxy-agent';
 import _ from 'lodash';
 import {main} from 'main-function';
@@ -45,9 +44,7 @@ main(async () => {
     port: config.port,
   });
 
-  let proxySettings = await getProxySettings();
-  let httpProxyUrl =
-    proxySettings && proxySettings.http && proxySettings.http.toString();
+  let httpProxyUrl = process.env['HTTP_PROXY'];
 
   if (httpProxyUrl) {
     console.info(`Using proxy ${httpProxyUrl}.`);

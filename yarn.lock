@@ -2148,7 +2148,7 @@ concat-stream@~1.6.0:
     readable-stream "^2.2.2"
     typedarray "^0.0.6"
 
-config-chain@^1.1.11, config-chain@^1.1.12:
+config-chain@^1.1.12:
   version "1.1.12"
   resolved "https://registry.yarnpkg.com/config-chain/-/config-chain-1.1.12.tgz#0fde8d091200eb5e808caf25fe618c02f48e4efa"
   integrity sha512-a1eOIcu8+7lUInge4Rpf/n4Krkf3Dd9lqhljRzII1/Zno/kRtUWnznPO3jOKBmTEktkt3fkxisUcivoj0ebzoA==
@@ -3165,12 +3165,6 @@ get-port@^5.0.0:
   integrity sha512-imzMU0FjsZqNa6BqOjbbW6w5BivHIuQKopjpPqcnx0AVHJQKCxK1O+Ab3OrVXhrekqfVMjwA9ZYu062R+KcIsQ==
   dependencies:
     type-fest "^0.3.0"
-
-"get-proxy-settings@https://github.com/Azure/get-proxy-settings.git":
-  version "0.1.11"
-  resolved "https://github.com/Azure/get-proxy-settings.git#c3fe2b355e0f4fe810498bd7a1c9980c8024e23c"
-  dependencies:
-    npm-conf "~1.1.3"
 
 get-value@^2.0.3, get-value@^2.0.6:
   version "2.0.6"
@@ -4468,14 +4462,6 @@ npm-bundled@^1.0.1:
   resolved "https://registry.yarnpkg.com/npm-bundled/-/npm-bundled-1.0.6.tgz#e7ba9aadcef962bb61248f91721cd932b3fe6bdd"
   integrity sha512-8/JCaftHwbd//k6y2rEWp6k1wxVfpFzB6t1p825+cUb7Ym2XQfhwIC5KwhrvzZRJu+LtDE585zVaS32+CGtf0g==
 
-npm-conf@~1.1.3:
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/npm-conf/-/npm-conf-1.1.3.tgz#256cc47bd0e218c259c4e9550bf413bc2192aff9"
-  integrity sha512-Yic4bZHJOt9RCFbRP3GgpqhScOY4HH3V2P8yBj6CeYq118Qr+BLXqT2JvpJ00mryLESpgOxf5XlFv4ZjXxLScw==
-  dependencies:
-    config-chain "^1.1.11"
-    pify "^3.0.0"
-
 npm-packlist@^1.1.6:
   version "1.4.4"
   resolved "https://registry.yarnpkg.com/npm-packlist/-/npm-packlist-1.4.4.tgz#866224233850ac534b63d1a6e76050092b5d2f44"
@@ -4837,11 +4823,6 @@ physical-cpu-count@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/physical-cpu-count/-/physical-cpu-count-2.0.0.tgz#18de2f97e4bf7a9551ad7511942b5496f7aba660"
   integrity sha1-GN4vl+S/epVRrXURlCtUlverpmA=
-
-pify@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/pify/-/pify-3.0.0.tgz#e5a4acd2c101fdf3d9a4d07f0dbc4db49dd28176"
-  integrity sha1-5aSs0sEB/fPZpNB/DbxNtJ3SgXY=
 
 pn@^1.1.0:
   version "1.1.0"

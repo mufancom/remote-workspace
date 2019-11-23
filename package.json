@@ -40,7 +40,6 @@
     "find-process": "^1.4.2",
     "fs-extra": "^8.1.0",
     "get-port": "^5.0.0",
-    "get-proxy-settings": "https://github.com/Azure/get-proxy-settings.git",
     "http-proxy-agent": "^2.1.0",
     "hyphenate": "^0.2.4",
     "js-yaml": "^3.13.1",
