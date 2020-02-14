@@ -160,7 +160,11 @@ export class WorkspaceFiles {
                   },
                   ...sharedVolumes,
                 ],
-                networks: [NETWORK_NAME(workspace)],
+                networks: {
+                  [NETWORK_NAME(workspace)]: {
+                    aliases: ['workspace'],
+                  },
+                },
                 ports: [`${workspace.port}:22`],
               },
             ],
