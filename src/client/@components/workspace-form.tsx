@@ -97,9 +97,15 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
   @computed
   private get paramDict(): Dict<string | undefined> {
-    let {workspace} = this.props;
+    let {workspace, defaultParams: defaultParamDict = {}} = this.props;
 
-    return this._paramDict || (workspace && workspace.params) || {};
+    return _.pick(
+      (workspace && workspace.params) || {
+        ...defaultParamDict,
+        ...this._paramDict,
+      },
+      this.paramKeys,
+    );
   }
 
   @computed
@@ -413,7 +419,6 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
         let {
           templates: {workspaces},
           defaultWorkspaceName,
-          defaultParams = {},
         } = this.props;
 
         let _defaultWorkspaceName =
@@ -422,25 +427,11 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
             ? defaultWorkspaceName
             : undefined;
 
-        if (!_defaultWorkspaceName) {
-          return;
+        if (_defaultWorkspaceName) {
+          runInAction(() => {
+            this.selectedWorkspaceName = _defaultWorkspaceName!;
+          });
         }
-
-        let paramKeysSet = new Set(this.paramKeys);
-        let _defaultParams: Dict<string> = {};
-
-        for (let paramKey in defaultParams) {
-          if (!paramKeysSet.has(paramKey)) {
-            continue;
-          }
-
-          _defaultParams[paramKey] = defaultParams[paramKey];
-        }
-
-        runInAction(() => {
-          this.selectedWorkspaceName = _defaultWorkspaceName!;
-          this._paramDict = {..._defaultParams, ...(this._paramDict ?? {})};
-        });
       },
     );
   }
@@ -473,7 +464,7 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
 
   private setParam(key: string, value: string): void {
     this._paramDict = {
-      ...this.paramDict,
+      ...this._paramDict,
       [key]: value,
     };
   }

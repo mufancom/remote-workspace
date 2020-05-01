@@ -11,7 +11,7 @@
     "experimentalDecorators": true,
 
     "rootDir": ".",
-    "noEmit": true
+    "outDir": "../../.bld-cache/client"
   },
   "references": [
     {

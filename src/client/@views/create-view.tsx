@@ -39,9 +39,13 @@ export class CreateView extends Component<CreateViewProps> {
     }
 
     return paramsString.split('&').reduce<Dict<string>>((dict, param) => {
-      let [key, val] = param.split('=');
+      let equalIndex = param.indexOf('=');
 
-      dict[key] = val;
+      if (equalIndex < 0) {
+        dict[param] = '';
+      } else {
+        dict[param.slice(0, equalIndex)] = param.slice(equalIndex + 1);
+      }
 
       return dict;
     }, {});

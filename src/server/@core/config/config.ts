@@ -59,23 +59,6 @@ export class Config extends AbstractConfig<RawConfig> {
       git: {services = []},
     } = this.raw;
 
-    if (!services.some(service => service.type === 'github')) {
-      services.push({
-        type: 'github',
-      });
-    }
-
-    if (
-      !services.some(
-        service => service.type === 'gitlab' && service.host === 'gitlab.com',
-      )
-    ) {
-      services.push({
-        type: 'gitlab',
-        host: 'gitlab.com',
-      });
-    }
-
     return new Map(
       services.map(config => [
         config.type === 'github' ? 'github.com' : config.host || 'gitlab.com',

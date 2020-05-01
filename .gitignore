@@ -9,6 +9,7 @@ node_modules/
 # Building artifacts
 
 .cache/
+.bld-cache/
 bld/
 *.tgz
 
