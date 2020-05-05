@@ -5,9 +5,9 @@ import {observer} from 'mobx-react';
 import React, {Component, ReactNode} from 'react';
 import {Dict} from 'tslang';
 
-import {RawTemplatesConfig} from '../../../bld/shared';
+import {CreateWorkspaceOptions, RawTemplatesConfig} from '../../../bld/shared';
 import {VersionInfo, WorkspaceForm} from '../@components';
-import {WorkspaceRoute} from '../@routes';
+import {WorkspaceRoute, route} from '../@routes';
 
 export interface CreateViewProps
   extends RouteComponentProps<WorkspaceRoute['create']> {
@@ -77,8 +77,12 @@ export class CreateView extends Component<CreateViewProps> {
     this.loadTemplates().catch(console.error);
   }
 
-  private onWorkspaceFormSubmitSuccess = (): void => {
+  private onWorkspaceFormSubmitSuccess = (
+    data: CreateWorkspaceOptions,
+  ): void => {
     this.formKey++;
+
+    route.list.$push({search: data.displayName});
   };
 
   private async loadTemplates(): Promise<void> {

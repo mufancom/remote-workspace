@@ -23,7 +23,7 @@ export interface WorkspaceFormProps {
   workspace: WorkspaceMetadata | undefined;
   defaultWorkspaceName?: string;
   defaultParams?: Dict<string>;
-  onSubmitSuccess(): void;
+  onSubmitSuccess(data: CreateWorkspaceOptions): void;
 }
 
 @observer
@@ -519,7 +519,7 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
       } else {
         message.success('Workspace created.');
 
-        onSubmitSuccess();
+        onSubmitSuccess(JSON.parse(json));
       }
     } finally {
       this.processing = false;
