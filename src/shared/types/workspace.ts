@@ -8,10 +8,12 @@ import {
 
 export interface WorkspaceMetadata extends RawWorkspace {
   port: number;
+  outdatedTime?: string;
 }
 
 export interface WorkspaceStatus extends WorkspaceMetadata {
   ready: boolean;
+  active: boolean;
 }
 
 export interface WorkspaceStatusPullMergeRequestInfo {

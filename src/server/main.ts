@@ -134,6 +134,26 @@ main(async () => {
 
   apiServer.route({
     method: 'GET',
+    path: '/api/up-and-reset-outdated-time/{id}',
+    async handler({params: {id}}) {
+      await daemon.upWorkspaceContainers(id);
+
+      return {};
+    },
+  });
+
+  apiServer.route({
+    method: 'GET',
+    path: '/api/stop/{id}',
+    async handler({params: {id}}) {
+      await daemon.stopWorkspaceContainers(id);
+
+      return {};
+    },
+  });
+
+  apiServer.route({
+    method: 'GET',
     path: '/static/{param*}',
     handler: {
       directory: {

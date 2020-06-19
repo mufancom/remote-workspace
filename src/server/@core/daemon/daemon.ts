@@ -46,10 +46,14 @@ export interface DaemonStorageData {
   workspaces?: WorkspaceMetadata[];
 }
 
+const CONTAINER_ACTIVE_TIME_DURATION = 1000 * 60 * 60 * 12;
+
 export class Daemon {
   readonly workspaceFiles = new WorkspaceFiles(this.config);
 
   private dockerComposeUpPromise = Promise.resolve();
+
+  private workspaceIdToTimerMap: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(
     private config: Config,
@@ -73,6 +77,52 @@ export class Daemon {
     );
   }
 
+  async getWorkspaceOutdatedTime(
+    metadata: WorkspaceMetadata,
+  ): Promise<string | undefined> {
+    if (!metadata.services) {
+      return undefined;
+    }
+
+    try {
+      let allServicesUpped = await v.every(
+        metadata.services,
+        async ({name}) => {
+          return new Promise<boolean>((resolve, reject) => {
+            ChildProcess.exec(
+              [
+                'docker',
+                'inspect',
+                '--format',
+                '"{{.State.Running}}"',
+                `${this.config.name}_${metadata.id}_${name}_1`,
+              ].join(' '),
+              (error, stdout) => {
+                if (error) {
+                  reject(error);
+
+                  return;
+                }
+
+                resolve(stdout.trim() === 'true');
+              },
+            );
+          });
+        },
+      );
+
+      if (!allServicesUpped) {
+        return undefined;
+      }
+    } catch (error) {
+      console.error(error);
+
+      return undefined;
+    }
+
+    return metadata.outdatedTime;
+  }
+
   async getWorkspaceStatuses(): Promise<
     WorkspaceStatusWithPullMergeRequestInfo[]
   > {
@@ -81,6 +131,12 @@ export class Daemon {
     let workspaces = await v.map(
       this.storage.list('workspaces'),
       async (metadata): Promise<WorkspaceStatus> => {
+        let outdatedTime = await this.getWorkspaceOutdatedTime(metadata);
+
+        if (outdatedTime !== metadata.outdatedTime) {
+          this.updateOutdatedTime(metadata, outdatedTime);
+        }
+
         return {
           ...metadata,
           projects: await v.map(
@@ -93,6 +149,8 @@ export class Daemon {
             },
           ),
           ready: await this.isWorkspaceReady(metadata.id),
+          active: !!outdatedTime,
+          outdatedTime,
         };
       },
     );
@@ -211,7 +269,31 @@ export class Daemon {
 
     await this.update();
 
+    let workspace = new Workspace({id, ...options}, port, this.config);
+
+    await this._upWorkspaceContainers(workspace);
+
     return id;
+  }
+
+  async upWorkspaceContainers(id: string): Promise<string> {
+    let workspace = this.workspaces.find(workspace => workspace.id === id);
+
+    if (!workspace) {
+      throw new Error(`No such workspace whose id is ${id}`);
+    }
+
+    return this._upWorkspaceContainers(workspace);
+  }
+
+  async stopWorkspaceContainers(id: string): Promise<void> {
+    let workspace = this.workspaces.find(workspace => workspace.id === id);
+
+    if (!workspace) {
+      throw new Error(`No such workspace whose id is ${id}`);
+    }
+
+    await this._stopWorkspaceContainers(workspace);
   }
 
   async updateWorkspace(workspace: WorkspaceMetadata): Promise<void> {
@@ -273,8 +355,6 @@ export class Daemon {
 
         await this.workspaceFiles.update(workspaces);
 
-        await this.dockerComposeUp();
-
         await this.workspaceFiles.prune(workspaces);
 
         console.info('Done.');
@@ -282,14 +362,55 @@ export class Daemon {
       .catch(console.error));
   }
 
-  private async dockerComposeUp(): Promise<void> {
+  private async resetOutdatedTime(workspace: Workspace): Promise<string> {
+    console.info(`Reseting outdated time of workspace ${workspace.id}...`);
+
+    let outdatedTime = new Date(
+      Date.now() + CONTAINER_ACTIVE_TIME_DURATION,
+    ).toLocaleString('zh-CN', {hour12: false});
+
+    let timer = setTimeout(() => {
+      this._stopWorkspaceContainers(workspace).catch(console.error);
+    }, CONTAINER_ACTIVE_TIME_DURATION);
+
+    this.workspaceIdToTimerMap.set(workspace.id, timer);
+
+    this.updateOutdatedTime(
+      {port: workspace.port, ...workspace.raw},
+      outdatedTime,
+    );
+
+    return outdatedTime;
+  }
+
+  private async _upWorkspaceContainers(workspace: Workspace): Promise<string> {
+    let timer = this.workspaceIdToTimerMap.get(workspace.id);
+
+    if (timer) {
+      clearTimeout(timer);
+
+      return this.resetOutdatedTime(workspace);
+    }
+
     let config = this.config;
 
-    console.info('Updating containers...');
+    console.info(`Starting containers of workspace ${workspace.id}...`);
+
+    let serviceNames = [
+      workspace.id,
+      ...workspace.services.map(({name}) => `${workspace.id}_${name}`),
+    ];
 
     let composeProcess = ChildProcess.spawn(
       'docker-compose',
-      ['--project-name', config.name, 'up', '--detach', '--remove-orphans'],
+      [
+        '--project-name',
+        config.name,
+        'up',
+        '--detach',
+        '--remove-orphans',
+        ...serviceNames,
+      ],
       {
         cwd: config.dir,
       },
@@ -299,5 +420,51 @@ export class Daemon {
     composeProcess.stderr.pipe(process.stderr);
 
     await v.awaitable(composeProcess);
+
+    return this.resetOutdatedTime(workspace);
+  }
+
+  private async _stopWorkspaceContainers(workspace: Workspace): Promise<void> {
+    let timer = this.workspaceIdToTimerMap.get(workspace.id);
+
+    if (timer) {
+      clearTimeout(timer);
+    }
+
+    let config = this.config;
+
+    console.info(`Stoping containers of workspace ${workspace.id}...`);
+
+    let serviceNames = [
+      workspace.id,
+      ...workspace.services.map(({name}) => `${workspace.id}_${name}`),
+    ];
+
+    let composeProcess = ChildProcess.spawn(
+      'docker-compose',
+      ['--project-name', config.name, 'stop', ...serviceNames],
+      {
+        cwd: config.dir,
+      },
+    );
+
+    composeProcess.stdout.pipe(process.stdout);
+    composeProcess.stderr.pipe(process.stderr);
+
+    await v.awaitable(composeProcess);
+
+    this.workspaceIdToTimerMap.delete(workspace.id);
+  }
+
+  private updateOutdatedTime(
+    metadata: WorkspaceMetadata,
+    outdatedTime: string | undefined,
+  ): void {
+    this.storage.pull('workspaces', ({id}) => id === metadata.id);
+
+    this.storage.push('workspaces', {
+      ...metadata,
+      outdatedTime,
+    });
   }
 }

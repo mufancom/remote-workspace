@@ -151,7 +151,7 @@ export class WorkspaceFiles {
                   // Recreate workspace container on workspace options change.
                   'remote-workspace.hash': workspace.hash,
                 },
-                restart: 'always',
+                restart: 'unless-stopped',
                 volumes: [
                   {
                     type: 'bind',
@@ -172,7 +172,7 @@ export class WorkspaceFiles {
               `${workspace.id}_${name}`,
               {
                 ...service,
-                restart: 'always',
+                restart: 'unless-stopped',
                 networks: {
                   [NETWORK_NAME(workspace)]: {
                     aliases: [name],
