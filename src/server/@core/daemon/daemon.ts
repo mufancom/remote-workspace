@@ -46,7 +46,9 @@ export interface DaemonStorageData {
   workspaces?: WorkspaceMetadata[];
 }
 
-const CONTAINER_ACTIVE_TIME_DURATION = 1000 * 60 * 60 * 12;
+const WORKSPACE_ACTIVE_TIME_DURATION = 1000 * 60 * 60 * 12;
+
+const WORKSPACE_STOP_DELAY = 1000 * 60;
 
 export class Daemon {
   readonly workspaceFiles = new WorkspaceFiles(this.config);
@@ -75,6 +77,25 @@ export class Daemon {
       () => true,
       () => false,
     );
+  }
+
+  isWorkspaceOpening(id: string): boolean {
+    let connectionNumber = Number.parseInt(
+      ChildProcess.execSync(
+        [
+          'docker',
+          'exec',
+          `${this.config.name}_${id}_1`,
+          '/bin/bash',
+          '-c',
+          `"netstat -tnpa | grep 'ESTABLISHED.*sshd' | wc -l"`,
+        ].join(' '),
+      )
+        .toString()
+        .trim(),
+    );
+
+    return connectionNumber !== 0;
   }
 
   async getWorkspaceOutdatedTime(
@@ -286,14 +307,20 @@ export class Daemon {
     return this._upWorkspaceContainers(workspace);
   }
 
-  async stopWorkspaceContainers(id: string): Promise<void> {
+  async stopWorkspaceContainers(id: string): Promise<string | undefined> {
     let workspace = this.workspaces.find(workspace => workspace.id === id);
 
     if (!workspace) {
       throw new Error(`No such workspace whose id is ${id}`);
     }
 
+    if (this.isWorkspaceOpening(workspace.id)) {
+      return 'This workspace is opening.';
+    }
+
     await this._stopWorkspaceContainers(workspace);
+
+    return undefined;
   }
 
   async updateWorkspace(workspace: WorkspaceMetadata): Promise<void> {
@@ -365,13 +392,36 @@ export class Daemon {
   private async resetOutdatedTime(workspace: Workspace): Promise<string> {
     console.info(`Reseting outdated time of workspace ${workspace.id}...`);
 
-    let outdatedTime = new Date(
-      Date.now() + CONTAINER_ACTIVE_TIME_DURATION,
-    ).toLocaleString('zh-CN', {hour12: false});
+    let outdatedTimestamp = Date.now() + WORKSPACE_ACTIVE_TIME_DURATION;
+    let outdatedTime = new Date(outdatedTimestamp).toLocaleString('zh-CN', {
+      hour12: false,
+    });
 
-    let timer = setTimeout(() => {
-      this._stopWorkspaceContainers(workspace).catch(console.error);
-    }, CONTAINER_ACTIVE_TIME_DURATION);
+    let timingWorkspaceStop = () => {
+      if (this.isWorkspaceOpening(workspace.id)) {
+        let timer = setTimeout(timingWorkspaceStop, WORKSPACE_STOP_DELAY);
+
+        this.workspaceIdToTimerMap.set(workspace.id, timer);
+
+        outdatedTimestamp += WORKSPACE_STOP_DELAY;
+
+        let adjustedOutdatedTime = new Date(outdatedTimestamp).toLocaleString(
+          'zh-CN',
+          {
+            hour12: false,
+          },
+        );
+
+        this.updateOutdatedTime(
+          {port: workspace.port, ...workspace.raw},
+          adjustedOutdatedTime,
+        );
+      } else {
+        this._stopWorkspaceContainers(workspace).catch(console.error);
+      }
+    };
+
+    let timer = setTimeout(timingWorkspaceStop, WORKSPACE_ACTIVE_TIME_DURATION);
 
     this.workspaceIdToTimerMap.set(workspace.id, timer);
 

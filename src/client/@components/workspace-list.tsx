@@ -290,14 +290,18 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
   ): Promise<void> {
     let response = await fetch(`/api/stop/${workspace.id}`);
 
-    let {error} = await response.json();
+    let {error, data} = await response.json();
 
     if (error) {
       message.error(error);
     } else {
-      message.success('Workspace containers stopped.');
+      if (data && data.errorMessage) {
+        message.error(data.errorMessage);
+      } else {
+        message.success('Workspace containers stopped.');
 
-      this.refresh();
+        this.refresh();
+      }
     }
   }
 

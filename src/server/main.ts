@@ -146,9 +146,15 @@ main(async () => {
     method: 'GET',
     path: '/api/stop/{id}',
     async handler({params: {id}}) {
-      await daemon.stopWorkspaceContainers(id);
+      let errorMessage = await daemon.stopWorkspaceContainers(id);
 
-      return {};
+      return errorMessage
+        ? {
+            data: {
+              errorMessage,
+            },
+          }
+        : {};
     },
   });
 
