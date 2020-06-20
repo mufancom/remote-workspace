@@ -1,4 +1,5 @@
 **/bld/**
+**/.bld-cache/**
 **/coverage/**
 **/.cache/**
 **/*-workdir/**
