@@ -18,7 +18,7 @@ import {
   WorkspaceStatusWithPullMergeRequestInfo,
 } from '../../../../bld/shared';
 import {gracefulReadJSONFile} from '../../../node-shared';
-import {parseGitURL} from '../../@utils';
+import {parseGitURL, spawn} from '../../@utils';
 import {Config} from '../config';
 import {Workspace} from '../workspace';
 
@@ -42,11 +42,17 @@ export function PROJECT_CONFIG_PATH(
   );
 }
 
+function CONTAINER_NAME(
+  config: Config,
+  workspaceId: string,
+  serviceName?: string,
+): string {
+  return _.compact([config.name, workspaceId, serviceName, '1']).join('_');
+}
+
 export interface DaemonStorageData {
   workspaces?: WorkspaceMetadata[];
 }
-
-const WORKSPACE_ACTIVE_TIME_DURATION = 1000 * 60 * 60 * 12;
 
 const WORKSPACE_STOP_DELAY = 1000 * 60;
 
@@ -79,26 +85,19 @@ export class Daemon {
     );
   }
 
-  isWorkspaceOpening(id: string): boolean {
-    let connectionNumber = Number.parseInt(
-      ChildProcess.execSync(
-        [
-          'docker',
-          'exec',
-          `${this.config.name}_${id}_1`,
-          '/bin/bash',
-          '-c',
-          `"netstat -tnpa | grep 'ESTABLISHED.*sshd' | wc -l"`,
-        ].join(' '),
-      )
-        .toString()
-        .trim(),
-    );
+  async isWorkspaceConnected(id: string): Promise<boolean> {
+    let {output} = await spawn('docker', [
+      'exec',
+      CONTAINER_NAME(this.config, id),
+      '/bin/bash',
+      '-c',
+      "netstat -tnpa | grep 'ESTABLISHED.*sshd' | wc -l",
+    ]);
 
-    return connectionNumber !== 0;
+    return Number(output) !== 0;
   }
 
-  async getWorkspaceOutdatedTime(
+  async getWorkspaceDeactivatesAt(
     metadata: WorkspaceMetadata,
   ): Promise<string | undefined> {
     if (!metadata.services) {
@@ -106,9 +105,9 @@ export class Daemon {
     }
 
     try {
-      let allServicesUpped = await v.every(
+      let allServicesActivated = await v.every(
         metadata.services,
-        async ({name}) => {
+        async service => {
           return new Promise<boolean>((resolve, reject) => {
             ChildProcess.exec(
               [
@@ -116,7 +115,7 @@ export class Daemon {
                 'inspect',
                 '--format',
                 '"{{.State.Running}}"',
-                `${this.config.name}_${metadata.id}_${name}_1`,
+                `${this.config.name}_${metadata.id}_${service.name}_1`,
               ].join(' '),
               (error, stdout) => {
                 if (error) {
@@ -132,7 +131,7 @@ export class Daemon {
         },
       );
 
-      if (!allServicesUpped) {
+      if (!allServicesActivated) {
         return undefined;
       }
     } catch (error) {
@@ -141,7 +140,7 @@ export class Daemon {
       return undefined;
     }
 
-    return metadata.outdatedTime;
+    return metadata.notConnectedSince;
   }
 
   async getWorkspaceStatuses(): Promise<
@@ -152,10 +151,10 @@ export class Daemon {
     let workspaces = await v.map(
       this.storage.list('workspaces'),
       async (metadata): Promise<WorkspaceStatus> => {
-        let outdatedTime = await this.getWorkspaceOutdatedTime(metadata);
+        let deactivatesAt = await this.getWorkspaceDeactivatesAt(metadata);
 
-        if (outdatedTime !== metadata.outdatedTime) {
-          this.updateOutdatedTime(metadata, outdatedTime);
+        if (deactivatesAt !== metadata.notConnectedSince) {
+          this.updateOutdatedTime(metadata, deactivatesAt);
         }
 
         return {
@@ -170,8 +169,8 @@ export class Daemon {
             },
           ),
           ready: await this.isWorkspaceReady(metadata.id),
-          active: !!outdatedTime,
-          outdatedTime,
+          active: !!deactivatesAt,
+          notConnectedSince: deactivatesAt,
         };
       },
     );
@@ -292,29 +291,29 @@ export class Daemon {
 
     let workspace = new Workspace({id, ...options}, port, this.config);
 
-    await this._upWorkspaceContainers(workspace);
+    await this._activateWorkspaceContainers(workspace);
 
     return id;
   }
 
-  async upWorkspaceContainers(id: string): Promise<string> {
+  async activateWorkspaceContainers(id: string): Promise<string> {
     let workspace = this.workspaces.find(workspace => workspace.id === id);
 
     if (!workspace) {
-      throw new Error(`No such workspace whose id is ${id}`);
+      throw new Error(`Workspace ${id} not found`);
     }
 
-    return this._upWorkspaceContainers(workspace);
+    return this._activateWorkspaceContainers(workspace);
   }
 
   async stopWorkspaceContainers(id: string): Promise<string | undefined> {
     let workspace = this.workspaces.find(workspace => workspace.id === id);
 
     if (!workspace) {
-      throw new Error(`No such workspace whose id is ${id}`);
+      throw new Error(`Workspace ${id} not found`);
     }
 
-    if (this.isWorkspaceOpening(workspace.id)) {
+    if (this.isWorkspaceConnected(workspace.id)) {
       return 'This workspace is opening.';
     }
 
@@ -390,15 +389,15 @@ export class Daemon {
   }
 
   private async resetOutdatedTime(workspace: Workspace): Promise<string> {
-    console.info(`Reseting outdated time of workspace ${workspace.id}...`);
+    console.info(`Resetting outdated time of workspace ${workspace.id}...`);
 
-    let outdatedTimestamp = Date.now() + WORKSPACE_ACTIVE_TIME_DURATION;
+    let outdatedTimestamp = Date.now() + this.config.deactivateAfterDuration;
     let outdatedTime = new Date(outdatedTimestamp).toLocaleString('zh-CN', {
       hour12: false,
     });
 
-    let timingWorkspaceStop = () => {
-      if (this.isWorkspaceOpening(workspace.id)) {
+    let timingWorkspaceStop = (): void => {
+      if (this.isWorkspaceConnected(workspace.id)) {
         let timer = setTimeout(timingWorkspaceStop, WORKSPACE_STOP_DELAY);
 
         this.workspaceIdToTimerMap.set(workspace.id, timer);
@@ -421,7 +420,10 @@ export class Daemon {
       }
     };
 
-    let timer = setTimeout(timingWorkspaceStop, WORKSPACE_ACTIVE_TIME_DURATION);
+    let timer = setTimeout(
+      timingWorkspaceStop,
+      this.config.deactivateAfterDuration,
+    );
 
     this.workspaceIdToTimerMap.set(workspace.id, timer);
 
@@ -433,7 +435,9 @@ export class Daemon {
     return outdatedTime;
   }
 
-  private async _upWorkspaceContainers(workspace: Workspace): Promise<string> {
+  private async _activateWorkspaceContainers(
+    workspace: Workspace,
+  ): Promise<string> {
     let timer = this.workspaceIdToTimerMap.get(workspace.id);
 
     if (timer) {
@@ -483,7 +487,7 @@ export class Daemon {
 
     let config = this.config;
 
-    console.info(`Stoping containers of workspace ${workspace.id}...`);
+    console.info(`Stopping containers of workspace ${workspace.id}...`);
 
     let serviceNames = [
       workspace.id,
@@ -506,15 +510,29 @@ export class Daemon {
     this.workspaceIdToTimerMap.delete(workspace.id);
   }
 
-  private updateOutdatedTime(
-    metadata: WorkspaceMetadata,
-    outdatedTime: string | undefined,
-  ): void {
+  private setNotConnectedSince(metadata: WorkspaceMetadata): void {
+    if (metadata.notConnectedSince) {
+      return;
+    }
+
     this.storage.pull('workspaces', ({id}) => id === metadata.id);
 
     this.storage.push('workspaces', {
       ...metadata,
-      outdatedTime,
+      notConnectedSince: Date.now(),
+    });
+  }
+
+  private unsetNotConnectedSince(metadata: WorkspaceMetadata): void {
+    if (!metadata.notConnectedSince) {
+      return;
+    }
+
+    this.storage.pull('workspaces', ({id}) => id === metadata.id);
+
+    this.storage.push('workspaces', {
+      ...metadata,
+      notConnectedSince: undefined,
     });
   }
 }

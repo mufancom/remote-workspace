@@ -66,4 +66,8 @@ export class Config extends AbstractConfig<RawConfig> {
       ]),
     );
   }
+
+  get deactivateAfterDuration(): number {
+    return this.raw.deactivateWorkspaceAfter ?? 24 * 3600 * 1000;
+  }
 }

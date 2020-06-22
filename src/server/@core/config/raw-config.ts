@@ -42,6 +42,10 @@ export interface RawConfig {
    * https://github.com/makeflow/remote-workspace/blob/master/src/shared/types/raw-config.ts
    */
   templates?: RawTemplatesConfig;
+  /**
+   * Milliseconds after which the workspace would deactivate (container will be stopped).
+   */
+  deactivateWorkspaceAfter?: number;
 }
 
 export interface RawUserConfig {

@@ -136,7 +136,7 @@ main(async () => {
     method: 'GET',
     path: '/api/up-and-reset-outdated-time/{id}',
     async handler({params: {id}}) {
-      await daemon.upWorkspaceContainers(id);
+      await daemon.activateWorkspaceContainers(id);
 
       return {};
     },

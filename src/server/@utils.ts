@@ -4,6 +4,36 @@ import * as Path from 'path';
 import * as ShellQuote from 'shell-quote';
 import * as v from 'villa';
 
+export interface SpawnResult {
+  output: string;
+  errorOutput: string;
+}
+
+export async function spawn(
+  command: string,
+  args: string[],
+): Promise<SpawnResult> {
+  let subprocess = ChildProcess.spawn(command, args);
+
+  let output = '';
+  let errorOutput = '';
+
+  subprocess.stdout.on('data', chunk => {
+    output += chunk;
+  });
+
+  subprocess.stderr.on('data', chunk => {
+    errorOutput += chunk;
+  });
+
+  await v.awaitable(subprocess);
+
+  return {
+    output,
+    errorOutput,
+  };
+}
+
 export async function writeTextFileToVolume(
   dockerComposeProjectName: string,
   volume: string,

@@ -8,7 +8,7 @@ import {
 
 export interface WorkspaceMetadata extends RawWorkspace {
   port: number;
-  outdatedTime?: string;
+  notConnectedSince?: number;
 }
 
 export interface WorkspaceStatus extends WorkspaceMetadata {
