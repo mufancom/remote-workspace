@@ -10,6 +10,20 @@ import {writeTextFileToVolume} from '../../@utils';
 import {Config, GeneralDockerVolumeEntry} from '../config';
 import {Workspace} from '../workspace';
 
+export interface DockerComposeSetting {
+  services: {
+    [serviceName: string]: {
+      deploy: {
+        replicas: number;
+      };
+    };
+  };
+}
+
+function DOCKER_COMPOSE_FILE_PATH(config: Config): string {
+  return Path.join(config.dir, 'docker-compose.yml');
+}
+
 function NETWORK_NAME(workspace: Workspace): string {
   return `${workspace.id}-network`;
 }
@@ -33,6 +47,12 @@ function WORKSPACE_METADATA_SOURCE_PATH(
 
 export class WorkspaceFiles {
   constructor(readonly config: Config) {}
+
+  async dockerComposeSettings(): Promise<DockerComposeSetting> {
+    let buffer = await FSE.readFile(DOCKER_COMPOSE_FILE_PATH(this.config));
+
+    return YAML.load(buffer.toString());
+  }
 
   async update(workspaces: Workspace[]): Promise<void> {
     let config = this.config;
@@ -68,7 +88,7 @@ export class WorkspaceFiles {
     console.info('Updating docker-compose.yml...');
 
     await FSE.outputFile(
-      Path.join(config.dir, 'docker-compose.yml'),
+      DOCKER_COMPOSE_FILE_PATH(config),
       this.buildDockerComposeYAML(workspaces),
     );
   }
@@ -155,7 +175,7 @@ export class WorkspaceFiles {
                 volumes: [
                   {
                     type: 'bind',
-                    source: WORKSPACE_SOURCE_PATH(config, workspace),
+                    source: `./workspaces/${workspace.id}`,
                     target: '/root/workspace',
                   },
                   ...sharedVolumes,
@@ -166,6 +186,9 @@ export class WorkspaceFiles {
                   },
                 },
                 ports: [`${workspace.port}:22`],
+                deploy: {
+                  replicas: workspace.active ? 1 : 0,
+                },
               },
             ],
             ...workspace.services.map(({name, ...service}) => [
@@ -177,6 +200,9 @@ export class WorkspaceFiles {
                   [NETWORK_NAME(workspace)]: {
                     aliases: [name],
                   },
+                },
+                deploy: {
+                  replicas: workspace.active ? 1 : 0,
                 },
               },
             ]),

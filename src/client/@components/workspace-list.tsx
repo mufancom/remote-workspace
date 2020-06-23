@@ -82,8 +82,10 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
                     title={
                       (workspace.displayName || workspace.id) +
                       (workspace.active
-                        ? ` [${workspace.outdatedTime}]`
-                        : ' [stopped]')
+                        ? ` [${new Date(
+                            workspace.deactivatesAt!,
+                          ).toLocaleString('zh-CN', {hour12: false})}]`
+                        : ' [suspended]')
                     }
                     description={
                       projects.length ? (
@@ -128,10 +130,8 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
 
     let editingWorkspaceId = editingWorkspace && editingWorkspace.id;
 
-    let onUpClick = (): void => {
-      this.upWorkspaceContainersAndResetOutdatedTime(workspace).catch(
-        console.error,
-      );
+    let onActivateClick = (): void => {
+      this.activateWorkspace(workspace).catch(console.error);
     };
 
     let onStopClick = (): void => {
@@ -165,8 +165,6 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     };
 
     return _.compact([
-      workspace.ready && <a onClick={onUpClick}>up</a>,
-      workspace.active && <a onClick={onStopClick}>stop</a>,
       workspace.active &&
         (workspace.id === this.tunnelWorkspaceId ? (
           <a onClick={onUntunnelClick}>untunnel</a>
@@ -175,8 +173,14 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
         ) : (
           undefined
         )),
+      workspace.ready &&
+        (workspace.active ? (
+          <a onClick={onStopClick}>stop</a>
+        ) : (
+          <a onClick={onActivateClick}>activate</a>
+        )),
       workspace.active && <a onClick={onWorkspaceClick}>workspace</a>,
-      <a onClick={onLogClick}>log</a>,
+      workspace.active && <a onClick={onLogClick}>log</a>,
       _onEditClick ? (
         workspace.id === editingWorkspaceId ? (
           <span>edit</span>
@@ -261,12 +265,8 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     }
   }
 
-  private async upWorkspaceContainersAndResetOutdatedTime(
-    workspace: WorkspaceStatus,
-  ): Promise<void> {
-    let response = await fetch(
-      `/api/up-and-reset-outdated-time/${workspace.id}`,
-    );
+  private async activateWorkspace(workspace: WorkspaceStatus): Promise<void> {
+    let response = await fetch(`/api/activate/${workspace.id}`);
 
     let active = workspace.active;
 
@@ -276,9 +276,9 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
       message.error(error);
     } else {
       if (!active) {
-        message.success('Workspace containers upped.');
+        message.success('Workspace containers activated.');
       } else {
-        message.success('Workspace outdated time reset.');
+        message.success('Workspace deactivated time reset.');
       }
 
       this.refresh();
@@ -288,6 +288,10 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
   private async stopWorkspaceContainers(
     workspace: WorkspaceStatus,
   ): Promise<void> {
+    if (workspace.id === this.tunnelWorkspaceId) {
+      await this.untunnel();
+    }
+
     let response = await fetch(`/api/stop/${workspace.id}`);
 
     let {error, data} = await response.json();

@@ -5,6 +5,7 @@ import {BoringCache} from 'boring-cache';
 import * as FSE from 'fs-extra';
 import getPort from 'get-port';
 import _ from 'lodash';
+import {CronJob} from 'cron';
 import uuid from 'uuid';
 import * as v from 'villa';
 
@@ -26,7 +27,7 @@ import {
   generateCreatePullMergeRequestInfo,
   listPullMergeRequests,
 } from './@git-services';
-import {WorkspaceFiles} from './@workspace-files';
+import {WorkspaceFiles, DockerComposeSetting} from './@workspace-files';
 
 export function PROJECT_CONFIG_PATH(
   config: Config,
@@ -42,38 +43,84 @@ export function PROJECT_CONFIG_PATH(
   );
 }
 
-function CONTAINER_NAME(
+function SERVICE_NAME(
   config: Config,
   workspaceId: string,
   serviceName?: string,
 ): string {
-  return _.compact([config.name, workspaceId, serviceName, '1']).join('_');
+  return _.compact([config.name, workspaceId, serviceName]).join('_');
+}
+
+async function CONTAINER_ID_PROMISE(
+  config: Config,
+  workspaceId: string,
+  serviceName?: string,
+): Promise<string> {
+  let dockerServiceName = SERVICE_NAME(config, workspaceId, serviceName);
+
+  let {output: output1} = await spawn('docker', [
+    'service',
+    'ps',
+    dockerServiceName,
+    '--quiet',
+  ]);
+  let taskId = output1.trim().split('\n')[0];
+
+  let {output: output2} = await spawn('docker', [
+    'inspect',
+    '--format',
+    '{{ .Status.ContainerStatus.ContainerID }}',
+    taskId,
+  ]);
+  return output2.trim().split('\n')[0];
+}
+
+function isWorkspaceActive(
+  metadata: WorkspaceMetadata,
+  serviceSetting: DockerComposeSetting['services'],
+): boolean {
+  return _.compact([
+    metadata.id,
+    ...(metadata.services?.map(({name}) => `${metadata.id}_${name}`) || []),
+  ]).every(
+    serviceName =>
+      serviceSetting[serviceName] &&
+      serviceSetting[serviceName].deploy.replicas === 1,
+  );
 }
 
 export interface DaemonStorageData {
   workspaces?: WorkspaceMetadata[];
 }
 
-const WORKSPACE_STOP_DELAY = 1000 * 60;
-
 export class Daemon {
   readonly workspaceFiles = new WorkspaceFiles(this.config);
 
   private dockerComposeUpPromise = Promise.resolve();
 
-  private workspaceIdToTimerMap: Map<string, NodeJS.Timeout> = new Map();
+  private schedulePromise = Promise.resolve();
 
   constructor(
     private config: Config,
     private storage: BoringCache<DaemonStorageData>,
   ) {
-    this.update().catch(console.error);
+    this.init().catch(console.error);
   }
 
   private get workspaces(): Workspace[] {
+    let now = Date.now();
+
     return this.storage
       .list('workspaces')
-      .map(({port, ...raw}) => new Workspace(raw, port, this.config));
+      .map(
+        ({port, deactivatesAt, ...raw}) =>
+          new Workspace(
+            raw,
+            port,
+            this.config,
+            !!deactivatesAt && deactivatesAt > now,
+          ),
+      );
   }
 
   async isWorkspaceReady(id: string): Promise<boolean> {
@@ -86,61 +133,17 @@ export class Daemon {
   }
 
   async isWorkspaceConnected(id: string): Promise<boolean> {
+    let containerId = await CONTAINER_ID_PROMISE(this.config, id);
+
     let {output} = await spawn('docker', [
       'exec',
-      CONTAINER_NAME(this.config, id),
+      containerId,
       '/bin/bash',
       '-c',
       "netstat -tnpa | grep 'ESTABLISHED.*sshd' | wc -l",
     ]);
 
     return Number(output) !== 0;
-  }
-
-  async getWorkspaceDeactivatesAt(
-    metadata: WorkspaceMetadata,
-  ): Promise<string | undefined> {
-    if (!metadata.services) {
-      return undefined;
-    }
-
-    try {
-      let allServicesActivated = await v.every(
-        metadata.services,
-        async service => {
-          return new Promise<boolean>((resolve, reject) => {
-            ChildProcess.exec(
-              [
-                'docker',
-                'inspect',
-                '--format',
-                '"{{.State.Running}}"',
-                `${this.config.name}_${metadata.id}_${service.name}_1`,
-              ].join(' '),
-              (error, stdout) => {
-                if (error) {
-                  reject(error);
-
-                  return;
-                }
-
-                resolve(stdout.trim() === 'true');
-              },
-            );
-          });
-        },
-      );
-
-      if (!allServicesActivated) {
-        return undefined;
-      }
-    } catch (error) {
-      console.error(error);
-
-      return undefined;
-    }
-
-    return metadata.notConnectedSince;
   }
 
   async getWorkspaceStatuses(): Promise<
@@ -151,11 +154,7 @@ export class Daemon {
     let workspaces = await v.map(
       this.storage.list('workspaces'),
       async (metadata): Promise<WorkspaceStatus> => {
-        let deactivatesAt = await this.getWorkspaceDeactivatesAt(metadata);
-
-        if (deactivatesAt !== metadata.notConnectedSince) {
-          this.updateOutdatedTime(metadata, deactivatesAt);
-        }
+        let deactivatesAt = metadata.deactivatesAt;
 
         return {
           ...metadata,
@@ -170,7 +169,7 @@ export class Daemon {
           ),
           ready: await this.isWorkspaceReady(metadata.id),
           active: !!deactivatesAt,
-          notConnectedSince: deactivatesAt,
+          deactivatesAt,
         };
       },
     );
@@ -281,43 +280,47 @@ export class Daemon {
       }
     }
 
-    this.storage.push('workspaces', {
+    let metadata = {
       id,
       port,
       ...options,
-    });
+    };
+
+    this.storage.push('workspaces', metadata);
+
+    await this._activateWorkspaceContainers(metadata);
 
     await this.update();
-
-    let workspace = new Workspace({id, ...options}, port, this.config);
-
-    await this._activateWorkspaceContainers(workspace);
 
     return id;
   }
 
-  async activateWorkspaceContainers(id: string): Promise<string> {
-    let workspace = this.workspaces.find(workspace => workspace.id === id);
+  async activateWorkspaceContainers(id: string): Promise<void> {
+    let metadata = this.storage
+      .list('workspaces')
+      .find(metadata => metadata.id === id);
 
-    if (!workspace) {
+    if (!metadata) {
       throw new Error(`Workspace ${id} not found`);
     }
 
-    return this._activateWorkspaceContainers(workspace);
+    await this._activateWorkspaceContainers(metadata);
   }
 
   async stopWorkspaceContainers(id: string): Promise<string | undefined> {
-    let workspace = this.workspaces.find(workspace => workspace.id === id);
+    let metadata = this.storage
+      .list('workspaces')
+      .find(metadata => metadata.id === id);
 
-    if (!workspace) {
+    if (!metadata) {
       throw new Error(`Workspace ${id} not found`);
     }
 
-    if (this.isWorkspaceConnected(workspace.id)) {
-      return 'This workspace is opening.';
+    if (await this.isWorkspaceConnected(metadata.id)) {
+      return 'This workspace is connected.';
     }
 
-    await this._stopWorkspaceContainers(workspace);
+    await this._stopWorkspaceContainers(metadata);
 
     return undefined;
   }
@@ -337,10 +340,12 @@ export class Daemon {
   }
 
   async retrieveWorkspaceLog(id: string): Promise<string> {
+    let config = this.config;
+
     let logProcess = ChildProcess.spawn('docker', [
       'logs',
       '--timestamps',
-      `${this.config.name}_${id}_1`,
+      await CONTAINER_ID_PROMISE(config, id),
     ]);
 
     let log = '';
@@ -381,6 +386,8 @@ export class Daemon {
 
         await this.workspaceFiles.update(workspaces);
 
+        await this.deploy();
+
         await this.workspaceFiles.prune(workspaces);
 
         console.info('Done.');
@@ -388,151 +395,122 @@ export class Daemon {
       .catch(console.error));
   }
 
-  private async resetOutdatedTime(workspace: Workspace): Promise<string> {
-    console.info(`Resetting outdated time of workspace ${workspace.id}...`);
-
-    let outdatedTimestamp = Date.now() + this.config.deactivateAfterDuration;
-    let outdatedTime = new Date(outdatedTimestamp).toLocaleString('zh-CN', {
-      hour12: false,
-    });
-
-    let timingWorkspaceStop = (): void => {
-      if (this.isWorkspaceConnected(workspace.id)) {
-        let timer = setTimeout(timingWorkspaceStop, WORKSPACE_STOP_DELAY);
-
-        this.workspaceIdToTimerMap.set(workspace.id, timer);
-
-        outdatedTimestamp += WORKSPACE_STOP_DELAY;
-
-        let adjustedOutdatedTime = new Date(outdatedTimestamp).toLocaleString(
-          'zh-CN',
-          {
-            hour12: false,
-          },
-        );
-
-        this.updateOutdatedTime(
-          {port: workspace.port, ...workspace.raw},
-          adjustedOutdatedTime,
-        );
-      } else {
-        this._stopWorkspaceContainers(workspace).catch(console.error);
-      }
-    };
-
-    let timer = setTimeout(
-      timingWorkspaceStop,
-      this.config.deactivateAfterDuration,
-    );
-
-    this.workspaceIdToTimerMap.set(workspace.id, timer);
-
-    this.updateOutdatedTime(
-      {port: workspace.port, ...workspace.raw},
-      outdatedTime,
-    );
-
-    return outdatedTime;
-  }
-
   private async _activateWorkspaceContainers(
-    workspace: Workspace,
-  ): Promise<string> {
-    let timer = this.workspaceIdToTimerMap.get(workspace.id);
+    metadata: WorkspaceMetadata,
+  ): Promise<void> {
+    await this.resetDeactivatesAt(metadata);
 
-    if (timer) {
-      clearTimeout(timer);
+    await this.update();
+  }
 
-      return this.resetOutdatedTime(workspace);
-    }
+  private async _stopWorkspaceContainers(
+    metadata: WorkspaceMetadata,
+  ): Promise<void> {
+    this.setDeactivatesAt(metadata, undefined);
 
+    await this.update();
+  }
+
+  private setDeactivatesAt(
+    metadata: WorkspaceMetadata,
+    deactivatesAt: number | undefined,
+  ): void {
+    this.storage.pull('workspaces', ({id}) => id === metadata.id);
+
+    this.storage.push('workspaces', {
+      ...metadata,
+      deactivatesAt,
+    });
+  }
+
+  private resetDeactivatesAt(metadata: WorkspaceMetadata): void {
+    let deactivatesAt = Date.now() + this.config.deactivateAfterDuration;
+
+    this.setDeactivatesAt(metadata, deactivatesAt);
+  }
+
+  private checkAndUpdateDeactivatesAt(): void {
+    this.schedulePromise = this.schedulePromise
+      .then(async () => {
+        let serviceSetting: DockerComposeSetting['services'];
+
+        try {
+          let dockerComposeSetting = await this.workspaceFiles.dockerComposeSettings();
+          serviceSetting = dockerComposeSetting['services'];
+        } catch (error) {
+          serviceSetting = {};
+        }
+
+        let needToUpdate = false;
+
+        await v.each(this.storage.list('workspaces'), async metadata => {
+          let active = isWorkspaceActive(metadata, serviceSetting);
+
+          if (active && (await this.isWorkspaceConnected(metadata.id))) {
+            this.resetDeactivatesAt(metadata);
+
+            return;
+          }
+
+          let deactivatesAt = metadata.deactivatesAt;
+
+          if (!deactivatesAt) {
+            if (active) {
+              // When this project starts, it's likely that there'are already
+              // some workspaces running.
+              this.resetDeactivatesAt(metadata);
+            } else {
+              // The workspace is suspended.
+            }
+
+            return;
+          }
+
+          let now = Date.now();
+
+          if (deactivatesAt <= now) {
+            this.setDeactivatesAt(metadata, undefined);
+
+            needToUpdate = true;
+          }
+        });
+
+        if (needToUpdate) {
+          await this.update();
+        }
+      })
+      .catch(console.error);
+  }
+
+  private async deploy(): Promise<void> {
     let config = this.config;
 
-    console.info(`Starting containers of workspace ${workspace.id}...`);
+    console.info('Deploying services...');
 
-    let serviceNames = [
-      workspace.id,
-      ...workspace.services.map(({name}) => `${workspace.id}_${name}`),
-    ];
-
-    let composeProcess = ChildProcess.spawn(
-      'docker-compose',
-      [
-        '--project-name',
-        config.name,
-        'up',
-        '--detach',
-        '--remove-orphans',
-        ...serviceNames,
-      ],
+    let {errorOutput} = await spawn(
+      'docker',
+      ['stack', 'deploy', '--compose-file', 'docker-compose.yml', config.name],
       {
         cwd: config.dir,
       },
     );
 
-    composeProcess.stdout.pipe(process.stdout);
-    composeProcess.stderr.pipe(process.stderr);
-
-    await v.awaitable(composeProcess);
-
-    return this.resetOutdatedTime(workspace);
-  }
-
-  private async _stopWorkspaceContainers(workspace: Workspace): Promise<void> {
-    let timer = this.workspaceIdToTimerMap.get(workspace.id);
-
-    if (timer) {
-      clearTimeout(timer);
+    if (errorOutput) {
+      console.error(errorOutput);
     }
 
-    let config = this.config;
-
-    console.info(`Stopping containers of workspace ${workspace.id}...`);
-
-    let serviceNames = [
-      workspace.id,
-      ...workspace.services.map(({name}) => `${workspace.id}_${name}`),
-    ];
-
-    let composeProcess = ChildProcess.spawn(
-      'docker-compose',
-      ['--project-name', config.name, 'stop', ...serviceNames],
-      {
-        cwd: config.dir,
-      },
-    );
-
-    composeProcess.stdout.pipe(process.stdout);
-    composeProcess.stderr.pipe(process.stderr);
-
-    await v.awaitable(composeProcess);
-
-    this.workspaceIdToTimerMap.delete(workspace.id);
+    console.info('Deployment ends...');
   }
 
-  private setNotConnectedSince(metadata: WorkspaceMetadata): void {
-    if (metadata.notConnectedSince) {
-      return;
-    }
+  private async init(): Promise<void> {
+    await this.update();
 
-    this.storage.pull('workspaces', ({id}) => id === metadata.id);
+    this.checkAndUpdateDeactivatesAt();
 
-    this.storage.push('workspaces', {
-      ...metadata,
-      notConnectedSince: Date.now(),
+    let job = new CronJob('0 */5 * * * *', () => {
+      this.checkAndUpdateDeactivatesAt();
     });
-  }
 
-  private unsetNotConnectedSince(metadata: WorkspaceMetadata): void {
-    if (!metadata.notConnectedSince) {
-      return;
-    }
-
-    this.storage.pull('workspaces', ({id}) => id === metadata.id);
-
-    this.storage.push('workspaces', {
-      ...metadata,
-      notConnectedSince: undefined,
-    });
+    job.start();
   }
 }

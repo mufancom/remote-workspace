@@ -13,6 +13,7 @@ export class Workspace {
     readonly raw: RawWorkspace,
     readonly port: number,
     private config: Config,
+    public active = false,
   ) {}
 
   get hash(): string {

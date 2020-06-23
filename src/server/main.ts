@@ -134,7 +134,7 @@ main(async () => {
 
   apiServer.route({
     method: 'GET',
-    path: '/api/up-and-reset-outdated-time/{id}',
+    path: '/api/activate/{id}',
     async handler({params: {id}}) {
       await daemon.activateWorkspaceContainers(id);
 

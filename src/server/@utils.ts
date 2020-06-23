@@ -12,8 +12,9 @@ export interface SpawnResult {
 export async function spawn(
   command: string,
   args: string[],
+  options?: ChildProcess.SpawnOptionsWithoutStdio,
 ): Promise<SpawnResult> {
-  let subprocess = ChildProcess.spawn(command, args);
+  let subprocess = ChildProcess.spawn(command, args, options);
 
   let output = '';
   let errorOutput = '';
