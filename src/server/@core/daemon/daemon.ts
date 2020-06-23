@@ -316,8 +316,14 @@ export class Daemon {
       throw new Error(`Workspace ${id} not found`);
     }
 
-    if (await this.isWorkspaceConnected(metadata.id)) {
-      return 'This workspace is connected.';
+    try {
+      if (await this.isWorkspaceConnected(metadata.id)) {
+        return 'This workspace is connected.';
+      }
+    } catch (error) {
+      console.error(error);
+
+      return undefined;
     }
 
     await this._deactivateWorkspace(metadata);
