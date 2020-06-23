@@ -288,14 +288,14 @@ export class Daemon {
 
     this.storage.push('workspaces', metadata);
 
-    await this._activateWorkspaceContainers(metadata);
+    await this._activateWorkspace(metadata);
 
     await this.update();
 
     return id;
   }
 
-  async activateWorkspaceContainers(id: string): Promise<void> {
+  async activateWorkspace(id: string): Promise<void> {
     let metadata = this.storage
       .list('workspaces')
       .find(metadata => metadata.id === id);
@@ -304,10 +304,10 @@ export class Daemon {
       throw new Error(`Workspace ${id} not found`);
     }
 
-    await this._activateWorkspaceContainers(metadata);
+    await this._activateWorkspace(metadata);
   }
 
-  async stopWorkspaceContainers(id: string): Promise<string | undefined> {
+  async deactivateWorkspace(id: string): Promise<string | undefined> {
     let metadata = this.storage
       .list('workspaces')
       .find(metadata => metadata.id === id);
@@ -320,7 +320,7 @@ export class Daemon {
       return 'This workspace is connected.';
     }
 
-    await this._stopWorkspaceContainers(metadata);
+    await this._deactivateWorkspace(metadata);
 
     return undefined;
   }
@@ -395,15 +395,13 @@ export class Daemon {
       .catch(console.error));
   }
 
-  private async _activateWorkspaceContainers(
-    metadata: WorkspaceMetadata,
-  ): Promise<void> {
+  private async _activateWorkspace(metadata: WorkspaceMetadata): Promise<void> {
     await this.resetDeactivatesAt(metadata);
 
     await this.update();
   }
 
-  private async _stopWorkspaceContainers(
+  private async _deactivateWorkspace(
     metadata: WorkspaceMetadata,
   ): Promise<void> {
     this.setDeactivatesAt(metadata, undefined);

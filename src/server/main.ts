@@ -136,7 +136,7 @@ main(async () => {
     method: 'GET',
     path: '/api/activate/{id}',
     async handler({params: {id}}) {
-      await daemon.activateWorkspaceContainers(id);
+      await daemon.activateWorkspace(id);
 
       return {};
     },
@@ -144,17 +144,19 @@ main(async () => {
 
   apiServer.route({
     method: 'GET',
-    path: '/api/stop/{id}',
+    path: '/api/deactivate/{id}',
     async handler({params: {id}}) {
-      let errorMessage = await daemon.stopWorkspaceContainers(id);
+      let errorMessage = await daemon.deactivateWorkspace(id);
 
-      return errorMessage
-        ? {
-            data: {
-              errorMessage,
-            },
-          }
-        : {};
+      if (errorMessage) {
+        return {
+          data: {
+            errorMessage,
+          },
+        };
+      }
+
+      return {};
     },
   });
 

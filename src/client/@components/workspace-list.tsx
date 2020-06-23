@@ -134,8 +134,8 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
       this.activateWorkspace(workspace).catch(console.error);
     };
 
-    let onStopClick = (): void => {
-      this.stopWorkspaceContainers(workspace).catch(console.error);
+    let onDeactivateClick = (): void => {
+      this.deactivateWorkspace(workspace).catch(console.error);
     };
 
     let onTunnelClick = (): void => {
@@ -175,7 +175,7 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
         )),
       workspace.ready &&
         (workspace.active ? (
-          <a onClick={onStopClick}>stop</a>
+          <a onClick={onDeactivateClick}>deactivate</a>
         ) : (
           <a onClick={onActivateClick}>activate</a>
         )),
@@ -285,14 +285,12 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
     }
   }
 
-  private async stopWorkspaceContainers(
-    workspace: WorkspaceStatus,
-  ): Promise<void> {
+  private async deactivateWorkspace(workspace: WorkspaceStatus): Promise<void> {
     if (workspace.id === this.tunnelWorkspaceId) {
       await this.untunnel();
     }
 
-    let response = await fetch(`/api/stop/${workspace.id}`);
+    let response = await fetch(`/api/deactivate/${workspace.id}`);
 
     let {error, data} = await response.json();
 
@@ -302,7 +300,7 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
       if (data && data.errorMessage) {
         message.error(data.errorMessage);
       } else {
-        message.success('Workspace containers stopped.');
+        message.success('Workspace containers deactivated.');
 
         this.refresh();
       }
