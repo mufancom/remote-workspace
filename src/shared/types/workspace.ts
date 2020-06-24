@@ -8,12 +8,14 @@ import {
 
 export interface WorkspaceMetadata extends RawWorkspace {
   port: number;
-  deactivatesAt?: number;
+  notConnectedSince?: number;
+  active: boolean;
 }
 
 export interface WorkspaceStatus extends WorkspaceMetadata {
   ready: boolean;
   active: boolean;
+  deactivatesAt: number | undefined;
 }
 
 export interface WorkspaceStatusPullMergeRequestInfo {

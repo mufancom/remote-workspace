@@ -27,7 +27,7 @@ import {
   generateCreatePullMergeRequestInfo,
   listPullMergeRequests,
 } from './@git-services';
-import {WorkspaceFiles, DockerComposeSetting} from './@workspace-files';
+import {WorkspaceFiles} from './@workspace-files';
 
 export function PROJECT_CONFIG_PATH(
   config: Config,
@@ -75,20 +75,6 @@ async function CONTAINER_ID_PROMISE(
   return output2.trim().split('\n')[0];
 }
 
-function isWorkspaceActive(
-  metadata: WorkspaceMetadata,
-  serviceSetting: DockerComposeSetting['services'],
-): boolean {
-  return _.compact([
-    metadata.id,
-    ...(metadata.services?.map(({name}) => `${metadata.id}_${name}`) || []),
-  ]).every(
-    serviceName =>
-      serviceSetting[serviceName] &&
-      serviceSetting[serviceName].deploy.replicas === 1,
-  );
-}
-
 export interface DaemonStorageData {
   workspaces?: WorkspaceMetadata[];
 }
@@ -108,18 +94,11 @@ export class Daemon {
   }
 
   private get workspaces(): Workspace[] {
-    let now = Date.now();
-
     return this.storage
       .list('workspaces')
       .map(
-        ({port, deactivatesAt, ...raw}) =>
-          new Workspace(
-            raw,
-            port,
-            this.config,
-            !!deactivatesAt && deactivatesAt > now,
-          ),
+        ({port, active, ...raw}) =>
+          new Workspace(raw, port, this.config, active),
       );
   }
 
@@ -154,7 +133,12 @@ export class Daemon {
     let workspaces = await v.map(
       this.storage.list('workspaces'),
       async (metadata): Promise<WorkspaceStatus> => {
-        let deactivatesAt = metadata.deactivatesAt;
+        let {active, notConnectedSince} = metadata;
+
+        let deactivatesAt =
+          active && notConnectedSince
+            ? notConnectedSince + this.config.deactivateAfterDuration
+            : undefined;
 
         return {
           ...metadata,
@@ -168,7 +152,6 @@ export class Daemon {
             },
           ),
           ready: await this.isWorkspaceReady(metadata.id),
-          active: !!deactivatesAt,
           deactivatesAt,
         };
       },
@@ -283,12 +266,11 @@ export class Daemon {
     let metadata = {
       id,
       port,
+      active: true,
       ...options,
     };
 
     this.storage.push('workspaces', metadata);
-
-    await this._activateWorkspace(metadata);
 
     await this.update();
 
@@ -402,7 +384,11 @@ export class Daemon {
   }
 
   private async _activateWorkspace(metadata: WorkspaceMetadata): Promise<void> {
-    await this.resetDeactivatesAt(metadata);
+    if (metadata.active) {
+      return;
+    }
+
+    this.setActive(metadata, true);
 
     await this.update();
   }
@@ -410,72 +396,81 @@ export class Daemon {
   private async _deactivateWorkspace(
     metadata: WorkspaceMetadata,
   ): Promise<void> {
-    this.setDeactivatesAt(metadata, undefined);
+    if (!metadata.active) {
+      return;
+    }
+
+    this.setActive(metadata, false);
 
     await this.update();
   }
 
-  private setDeactivatesAt(
+  private setActive(metadata: WorkspaceMetadata, active: boolean): void {
+    this.storage.pull('workspaces', ({id}) => id === metadata.id);
+
+    this.storage.push('workspaces', {
+      ...metadata,
+      active,
+    });
+  }
+
+  private setNotConnectedSince(
     metadata: WorkspaceMetadata,
-    deactivatesAt: number | undefined,
+    notConnectedSince: number | undefined,
   ): void {
     this.storage.pull('workspaces', ({id}) => id === metadata.id);
 
     this.storage.push('workspaces', {
       ...metadata,
-      deactivatesAt,
+      notConnectedSince,
     });
   }
 
-  private resetDeactivatesAt(metadata: WorkspaceMetadata): void {
-    let deactivatesAt = Date.now() + this.config.deactivateAfterDuration;
+  private setActiveAndNotConnectedSince(
+    metadata: WorkspaceMetadata,
+    active: boolean,
+    notConnectedSince: number | undefined,
+  ): void {
+    this.storage.pull('workspaces', ({id}) => id === metadata.id);
 
-    this.setDeactivatesAt(metadata, deactivatesAt);
+    this.storage.push('workspaces', {
+      ...metadata,
+      active,
+      notConnectedSince,
+    });
   }
 
-  private checkAndUpdateDeactivatesAt(): void {
+  private resetNotConnectedSince(metadata: WorkspaceMetadata): void {
+    this.setNotConnectedSince(metadata, Date.now());
+  }
+
+  private checkAndUpdateNotConnectedSince(): void {
     this.schedulePromise = this.schedulePromise
       .then(async () => {
-        let serviceSetting: DockerComposeSetting['services'];
-
-        try {
-          let dockerComposeSetting = await this.workspaceFiles.dockerComposeSettings();
-          serviceSetting = dockerComposeSetting['services'];
-        } catch (error) {
-          serviceSetting = {};
-        }
-
         let needToUpdate = false;
 
         await v.each(this.storage.list('workspaces'), async metadata => {
-          let active = isWorkspaceActive(metadata, serviceSetting);
+          let active = metadata.active;
 
-          if (active && (await this.isWorkspaceConnected(metadata.id))) {
-            this.resetDeactivatesAt(metadata);
-
-            return;
-          }
-
-          let deactivatesAt = metadata.deactivatesAt;
-
-          if (!deactivatesAt) {
-            if (active) {
-              // When this project starts, it's likely that there'are already
-              // some workspaces running.
-              this.resetDeactivatesAt(metadata);
-            } else {
-              // The workspace is suspended.
+          if (active) {
+            if (await this.isWorkspaceConnected(metadata.id)) {
+              return;
             }
 
-            return;
-          }
+            if (!metadata.notConnectedSince) {
+              this.resetNotConnectedSince(metadata);
 
-          let now = Date.now();
+              return;
+            }
 
-          if (deactivatesAt <= now) {
-            this.setDeactivatesAt(metadata, undefined);
+            let deactivatedAt =
+              metadata.notConnectedSince + this.config.deactivateAfterDuration;
 
-            needToUpdate = true;
+            if (deactivatedAt <= Date.now()) {
+              this.setActiveAndNotConnectedSince(metadata, false, undefined);
+
+              needToUpdate = true;
+            }
           }
         });
 
@@ -509,10 +504,10 @@ export class Daemon {
   private async init(): Promise<void> {
     await this.update();
 
-    this.checkAndUpdateDeactivatesAt();
+    this.checkAndUpdateNotConnectedSince();
 
     let job = new CronJob('0 */5 * * * *', () => {
-      this.checkAndUpdateDeactivatesAt();
+      this.checkAndUpdateNotConnectedSince();
     });
 
     job.start();

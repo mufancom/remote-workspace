@@ -82,9 +82,11 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
                     title={
                       (workspace.displayName || workspace.id) +
                       (workspace.active
-                        ? ` [${new Date(
-                            workspace.deactivatesAt!,
-                          ).toLocaleString('zh-CN', {hour12: false})}]`
+                        ? workspace.deactivatesAt
+                          ? ` [${new Date(
+                              workspace.deactivatesAt,
+                            ).toLocaleString('zh-CN', {hour12: false})}]`
+                          : ''
                         : ' [suspended]')
                     }
                     description={

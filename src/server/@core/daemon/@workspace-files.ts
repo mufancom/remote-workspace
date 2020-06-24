@@ -10,16 +10,6 @@ import {writeTextFileToVolume} from '../../@utils';
 import {Config, GeneralDockerVolumeEntry} from '../config';
 import {Workspace} from '../workspace';
 
-export interface DockerComposeSetting {
-  services: {
-    [serviceName: string]: {
-      deploy: {
-        replicas: number;
-      };
-    };
-  };
-}
-
 function DOCKER_COMPOSE_FILE_PATH(config: Config): string {
   return Path.join(config.dir, 'docker-compose.yml');
 }
@@ -47,12 +37,6 @@ function WORKSPACE_METADATA_SOURCE_PATH(
 
 export class WorkspaceFiles {
   constructor(readonly config: Config) {}
-
-  async dockerComposeSettings(): Promise<DockerComposeSetting> {
-    let buffer = await FSE.readFile(DOCKER_COMPOSE_FILE_PATH(this.config));
-
-    return YAML.load(buffer.toString());
-  }
 
   async update(workspaces: Workspace[]): Promise<void> {
     let config = this.config;
