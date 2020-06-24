@@ -114,13 +114,23 @@ export class Daemon {
   async isWorkspaceConnected(id: string): Promise<boolean> {
     let containerId = await CONTAINER_ID_PROMISE(this.config, id);
 
-    let {output} = await spawn('docker', [
-      'exec',
-      containerId,
-      '/bin/bash',
-      '-c',
-      "netstat -tnpa | grep 'ESTABLISHED.*sshd' | wc -l",
-    ]);
+    let output: string;
+
+    try {
+      let result = await spawn('docker', [
+        'exec',
+        containerId,
+        '/bin/bash',
+        '-c',
+        "netstat -tnpa | grep 'ESTABLISHED.*sshd' | wc -l",
+      ]);
+
+      output = result.output;
+    } catch (error) {
+      console.error(error);
+
+      return false;
+    }
 
     return Number(output) !== 0;
   }
@@ -454,6 +464,10 @@ export class Daemon {
 
           if (active) {
             if (await this.isWorkspaceConnected(metadata.id)) {
+              if (metadata.notConnectedSince) {
+                this.setNotConnectedSince(metadata, undefined);
+              }
+
               return;
             }
 
