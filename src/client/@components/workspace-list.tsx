@@ -175,14 +175,14 @@ export class WorkspaceList extends Component<WorkspaceListProps> {
         ) : (
           undefined
         )),
+      workspace.active && <a onClick={onWorkspaceClick}>workspace</a>,
+      workspace.active && <a onClick={onLogClick}>log</a>,
       workspace.ready &&
         (workspace.active ? (
           <a onClick={onDeactivateClick}>deactivate</a>
         ) : (
           <a onClick={onActivateClick}>activate</a>
         )),
-      workspace.active && <a onClick={onWorkspaceClick}>workspace</a>,
-      workspace.active && <a onClick={onLogClick}>log</a>,
       _onEditClick ? (
         workspace.id === editingWorkspaceId ? (
           <span>edit</span>
