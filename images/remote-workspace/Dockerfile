@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN add-apt-repository ppa:git-core/ppa
 
 RUN apt-get update
-RUN apt-get install --assume-yes ubuntu-server openssh-server
+RUN apt-get install --assume-yes ubuntu-server openssh-server git
 
 WORKDIR /remote-workspace
 
