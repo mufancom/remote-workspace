@@ -2,6 +2,8 @@ FROM buildpack-deps:bionic
 
 ENV DEBIAN_FRONTEND noninteractive
 
+RUN apt-get install software-properties-common
+
 RUN add-apt-repository ppa:git-core/ppa
 
 RUN apt-get update
