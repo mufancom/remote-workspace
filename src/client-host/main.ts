@@ -81,6 +81,22 @@ main(async () => {
         workspace,
       )}`;
 
+      let env = {...process.env};
+
+      if (process.platform === 'darwin') {
+        let SSH_AUTH_SOCK: string;
+
+        try {
+          SSH_AUTH_SOCK = ChildProcess.execSync('launchctl getenv SSH_AUTH_SOCK', {encoding: 'utf8'}).trim();
+
+          if (SSH_AUTH_SOCK) {
+            env = {...env, SSH_AUTH_SOCK};
+          }
+        } catch (error) {
+          console.error(error.message);
+        }
+      }
+
       let subprocess = ChildProcess.spawn(
         config.vscodeExecutable,
         project
@@ -90,6 +106,7 @@ main(async () => {
             ]
           : ['--file-uri', vscodeRemoteURI],
         {
+          env,
           detached: true,
           shell: true,
           stdio: 'ignore',
