@@ -23,6 +23,7 @@ export interface WorkspaceFormProps {
   workspace: WorkspaceMetadata | undefined;
   defaultWorkspaceName?: string;
   defaultParams?: Dict<string>;
+  customInitScript?: string;
   onSubmitSuccess(data: CreateWorkspaceOptions): void;
 }
 
@@ -236,6 +237,7 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
       owner: localStorage.email,
       projects: this.selectedProjectTemplates.map(({params, ...rest}) => rest),
       services: this.selectedServiceTemplates.map(({params, ...rest}) => rest),
+      customInitScript: this.props.customInitScript,
     };
 
     options = _.cloneDeepWith(options, value => {
