@@ -6,18 +6,20 @@ import {
 import {BrowserHistory} from 'boring-router-react';
 
 export const workspaceRouteSchema = schema({
-  home: {
-    $match: '',
-  },
-  create: {
-    $query: {
-      template: true,
-      params: true,
+  $children: {
+    home: {
+      $match: '',
     },
-  },
-  list: {
-    $query: {
-      search: true,
+    create: {
+      $query: {
+        template: true,
+        params: true,
+      },
+    },
+    list: {
+      $query: {
+        search: true,
+      },
     },
   },
 });

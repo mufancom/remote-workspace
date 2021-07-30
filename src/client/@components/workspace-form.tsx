@@ -377,7 +377,7 @@ export class WorkspaceForm extends Component<WorkspaceFormProps> {
     return (
       <Descriptions.Item label="Options">
         <Input.TextArea
-          autosize
+          autoSize
           value={this.optionsJSON}
           onChange={this.onOptionsJSONInputChange}
         />

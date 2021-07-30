@@ -10,7 +10,7 @@ export class App extends Component {
   render(): ReactNode {
     return (
       <>
-        <Route match={route.home} component={HomeView} />
+        <Route match={route} component={HomeView} />
         <Route match={route.create} component={CreateView} />
         <Route match={route.list} component={ListView} />
       </>

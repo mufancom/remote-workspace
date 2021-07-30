@@ -8,7 +8,7 @@ import H2O2 from '@hapi/h2o2';
 import {Server} from '@hapi/hapi';
 import chalk from 'chalk';
 import findProcess from 'find-process';
-import HttpProxyAgent from 'http-proxy-agent';
+import {HttpProxyAgent} from 'http-proxy-agent';
 import _ from 'lodash';
 import {main} from 'main-function';
 import fetch from 'node-fetch';
